@@ -1,0 +1,64 @@
+---
+title: "Introdução aos webhooks"
+description: "Como a Yeon entrega eventos de transação e como cadastrar seu endpoint"
+---
+
+Um webhook é uma requisição `POST` que a Yeon envia para a sua aplicação quando uma transação muda de estado. Em vez de consultar a API repetidamente, você recebe cada evento assim que ele acontece.
+
+## Como funciona a entrega
+
+A Yeon usa o padrão **outbox** para garantir que nenhum evento se perca:
+
+<Steps>
+  <Step title="A transação muda de estado">
+    Um pagamento é aprovado, reembolsado, ou uma assinatura é renovada.
+  </Step>
+  <Step title="O evento é persistido">
+    O evento é gravado numa fila interna (outbox) antes de qualquer entrega, então ele sobrevive a reinícios e falhas.
+  </Step>
+  <Step title="A Yeon envia o webhook">
+    Um worker lê a fila, monta o payload e faz um `POST` para cada endpoint ativo que assina aquele tipo de evento.
+  </Step>
+  <Step title="Sua aplicação responde 2xx">
+    Se a resposta for `2xx`, a entrega é concluída. Qualquer outro status agenda uma nova tentativa.
+  </Step>
+</Steps>
+
+Os webhooks são **enviados ao vendedor** (seller). O roteamento é feito pelo e‑mail do vendedor presente no payload (`data.seller.email`): um endpoint só recebe eventos das transações cujo vendedor corresponde à conta dona daquele webhook.
+
+## Cadastrar um webhook
+
+O cadastro de webhooks é feito pelo [Painel](https://app.yeon.com.br). Acesse as configurações do seu projeto, abra a seção de webhooks e cadastre um novo endpoint.
+
+Um webhook tem os seguintes campos:
+
+<ParamField path="url" type="string" required>
+  URL de destino. Em produção é obrigatório `https://`; endereços privados/localhost são bloqueados.
+</ParamField>
+
+<ParamField path="secret" type="string">
+  Segredo usado para assinar o payload. Quando definido, cada entrega inclui o cabeçalho `X-Yeon-Signature`. Consulte [Segurança e entrega](/webhooks/seguranca).
+</ParamField>
+
+<ParamField path="events" type="string[]">
+  Lista dos tipos de evento assinados, por exemplo `["payment.approved", "payment.refunded"]`. Veja [Eventos](/webhooks/eventos).
+</ParamField>
+
+<ParamField path="status" type="string">
+  `active` ou `inactive`. Apenas webhooks `active` recebem entregas.
+</ParamField>
+
+<Tip>
+  No Painel, use a opção de **enviar evento de teste** para receber um payload de exemplo com dados fabricados. Ele usa exatamente o mesmo construtor do fluxo real, então o formato bate campo a campo com um evento de produção.
+</Tip>
+
+## Próximos passos
+
+<Columns cols={2}>
+  <Card title="Eventos disponíveis" icon="list" href="/webhooks/eventos">
+    Todos os tipos de evento e status de transação.
+  </Card>
+  <Card title="Estrutura do payload" icon="code" href="/webhooks/payload">
+    O envelope e o schema completo dos dados.
+  </Card>
+</Columns>

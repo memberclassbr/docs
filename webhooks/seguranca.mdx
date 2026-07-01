@@ -1,0 +1,89 @@
+---
+title: "Segurança e entrega"
+description: "Cabeçalhos, assinatura HMAC, tentativas de reenvio e idempotência"
+---
+
+## Cabeçalhos
+
+Toda entrega inclui:
+
+| Cabeçalho | Descrição |
+| --- | --- |
+| `Content-Type` | Sempre `application/json` |
+| `X-Yeon-Event-Type` | Tipo do evento, por exemplo `payment.approved` |
+| `X-Yeon-Outbox-Event-ID` | ID numérico do evento na fila. Use como chave de idempotência. Vale `manual-test` em eventos de teste |
+| `X-Yeon-Signature` | Assinatura HMAC‑SHA256 do corpo. Presente **somente** quando o webhook tem um segredo configurado |
+
+## Verificar a assinatura
+
+Quando você define um `secret` no webhook, a Yeon assina cada entrega. A assinatura é o **HMAC‑SHA256 do corpo bruto da requisição**, com o seu segredo como chave, codificado em hexadecimal.
+
+Para validar:
+
+<Steps>
+  <Step title="Leia o corpo bruto">
+    Calcule o HMAC sobre os **bytes exatos** recebidos, antes de qualquer parsing ou reserialização do JSON.
+  </Step>
+  <Step title="Calcule o HMAC-SHA256">
+    Use o segredo do webhook como chave e gere o hex.
+  </Step>
+  <Step title="Compare em tempo constante">
+    Compare com `X-Yeon-Signature` usando uma comparação resistente a timing. Rejeite se não bater.
+  </Step>
+</Steps>
+
+```js Node.js
+import crypto from "node:crypto";
+
+// Use o corpo BRUTO (Buffer/string), não o objeto já parseado.
+function verifyYeonSignature(rawBody, signatureHeader, secret) {
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex");
+
+  const a = Buffer.from(expected);
+  const b = Buffer.from(signatureHeader || "");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+// Express: capture o corpo bruto com express.raw({ type: "application/json" })
+app.post("/webhooks/yeon", express.raw({ type: "application/json" }), (req, res) => {
+  const ok = verifyYeonSignature(req.body, req.get("X-Yeon-Signature"), process.env.YEON_WEBHOOK_SECRET);
+  if (!ok) return res.status(401).end();
+
+  const event = JSON.parse(req.body.toString("utf8"));
+  // ... trate o evento
+  res.status(200).end();
+});
+```
+
+<Warning>
+  Se o webhook não tiver segredo, o cabeçalho `X-Yeon-Signature` não é enviado. Configure sempre um segredo em produção para poder validar a origem das entregas.
+</Warning>
+
+## Resposta esperada
+
+Responda com um status **`2xx`** para confirmar o recebimento. Qualquer outro status — ou uma falha de conexão — é tratado como erro e agenda um reenvio.
+
+A conexão tem **timeout de 10 segundos**. Confirme o recebimento rápido (retorne `2xx`) e faça o processamento pesado de forma assíncrona. A Yeon lê até 2 KB do corpo da sua resposta e guarda nos logs de entrega para diagnóstico.
+
+## Reenvios
+
+Entregas que falham são reenviadas com **backoff exponencial**, até 5 tentativas no total:
+
+| Tentativa | Agendada após a falha anterior |
+| --- | --- |
+| 1 | imediata |
+| 2 | +1 minuto |
+| 3 | +2 minutos |
+| 4 | +4 minutos |
+| 5 | +8 minutos |
+
+Após a 5ª tentativa sem sucesso, o evento deixa de ser reenviado automaticamente. Você ainda pode reenviá‑lo manualmente pelos logs de entrega no [Painel](https://app.yeon.com.br). Os logs ficam disponíveis por 30 dias.
+
+## Idempotência
+
+Como um mesmo evento pode chegar mais de uma vez (por reenvio ou por uma resposta `2xx` que se perdeu), sua aplicação **deve tratar as entregas de forma idempotente**.
+
+Use o cabeçalho **`X-Yeon-Outbox-Event-ID`** como chave de idempotência: registre os IDs já processados e ignore duplicatas. A Yeon não reentrega um par `(webhook, evento)` já confirmado, mas as tentativas de reenvio reutilizam o mesmo ID — então a deduplicação do seu lado fecha o ciclo com segurança.

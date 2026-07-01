@@ -1,0 +1,66 @@
+---
+title: "Eventos"
+description: "Catálogo dos eventos de transação e os status de pagamento e assinatura"
+---
+
+Cada webhook carrega um campo `event` que identifica o que aconteceu. Assine apenas os eventos que a sua aplicação precisa tratar.
+
+## Eventos de pagamento
+
+Disparados a partir de uma transação avulsa (`one_time`) ou de uma cobrança de assinatura.
+
+| Evento | Quando é enviado |
+| --- | --- |
+| `payment.approved` | Pagamento aprovado e capturado |
+| `payment.pending` | Pagamento aguardando resolução (PIX, boleto, etc.) |
+| `payment.rejected` | Pagamento recusado |
+| `payment.failed` | Falha no processamento do pagamento |
+| `payment.refunded` | Pagamento reembolsado integralmente |
+
+<Note>
+  Um reembolso **parcial** gera `payment.partially_refunded` internamente, mas esse evento **não é entregue** aos webhooks no momento. Apenas reembolsos integrais (`payment.refunded`) são enviados.
+</Note>
+
+## Eventos de assinatura
+
+Disparados ao longo do ciclo de vida de uma assinatura.
+
+| Evento | Quando é enviado |
+| --- | --- |
+| `subscription.created` | Assinatura criada e cobrança inicial processada |
+| `subscription.activated` | Assinatura ativada após a aprovação da primeira cobrança |
+| `subscription.renewed` | Renovação aprovada na virada do ciclo |
+| `subscription.cancelled` | Assinatura cancelada |
+| `subscription.past_due` | Cobrança falhou; assinatura em período de retentativa |
+| `subscription.expired` | Retentativas esgotadas; assinatura encerrada |
+
+## Status de pagamento
+
+O campo `data.payment.status` pode assumir os seguintes valores:
+
+| Status | Significado | Evento correspondente |
+| --- | --- | --- |
+| `approved` | Cobrado com sucesso | `payment.approved` |
+| `pending` | Aguardando resolução (PIX, boleto) | `payment.pending` |
+| `in_process` | Em processamento (ex.: 3‑D Secure) | — (transita para aprovado/recusado) |
+| `rejected` | Pagamento recusado | `payment.rejected` |
+| `failed` | Falha interna de processamento | `payment.failed` |
+| `refunded` | Reembolsado integralmente | `payment.refunded` |
+| `partially_refunded` | Reembolsado parcialmente | — (não entregue) |
+| `charged_back` | Chargeback aberto | — (sem evento ainda) |
+| `cancelled` | Cancelado | `payment.failed` |
+
+## Status de assinatura
+
+O campo `data.subscription.status` pode assumir:
+
+| Status | Significado |
+| --- | --- |
+| `active` | Cobrando normalmente |
+| `past_due` | Cobrança falhou; em retentativa |
+| `cancelled` | Cancelada |
+| `expired` | Encerrada após esgotar as retentativas |
+
+<Info>
+  Os eventos `dispute.opened` e `dispute.resolved` estão reservados para chargebacks/disputas, mas ainda **não são emitidos**. Não dependa deles ainda.
+</Info>
