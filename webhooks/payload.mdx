@@ -1,0 +1,317 @@
+---
+title: "Payload"
+description: "Estrutura do envelope e o schema completo dos dados de pagamento e assinatura"
+---
+
+Todo webhook é enviado como JSON com `Content-Type: application/json`. O corpo tem um **envelope** comum a todos os eventos e um bloco `data` cujo conteúdo depende do tipo de evento.
+
+## Envelope
+
+```json
+{
+  "id": "evt_9f1c2d34-5b6a-47c8-9e0f-1a2b3c4d5e6f",
+  "event": "payment.approved",
+  "version": "1.0.0",
+  "created_at": "2026-07-01T12:00:00Z",
+  "environment": "production",
+  "data": { }
+}
+```
+
+<ParamField path="id" type="string">
+  Identificador único do evento, no formato `evt_<uuid>`. Use-o para logs e rastreamento.
+</ParamField>
+
+<ParamField path="event" type="string">
+  Tipo do evento, por exemplo `payment.approved`. Veja [Eventos](/webhooks/eventos).
+</ParamField>
+
+<ParamField path="version" type="string">
+  Versão do schema do payload. Atualmente `1.0.0`.
+</ParamField>
+
+<ParamField path="created_at" type="string">
+  Momento em que o evento foi gerado, em UTC (RFC 3339).
+</ParamField>
+
+<ParamField path="environment" type="string">
+  Ambiente de origem: `production`, `sandbox` ou `development`.
+</ParamField>
+
+<ParamField path="data" type="object">
+  Dados do evento. A estrutura muda entre pagamento e assinatura (veja abaixo). Inclui também um bloco `data.metadata` com `trigger`, `request_id` e `origin`.
+</ParamField>
+
+<Note>
+  Valores monetários aparecem sempre como um objeto `{ "value": 97.0, "cents": 9700, "currency": "BRL" }`. Use `cents` (inteiro) para cálculos e evitar erros de ponto flutuante.
+</Note>
+
+## Payload de pagamento
+
+Enviado nos eventos `payment.*`. Nesses eventos, `data.subscription` é `null`.
+
+<CodeGroup>
+```json payment.approved
+{
+  "id": "evt_9f1c2d34-5b6a-47c8-9e0f-1a2b3c4d5e6f",
+  "event": "payment.approved",
+  "version": "1.0.0",
+  "created_at": "2026-07-01T12:00:00Z",
+  "environment": "production",
+  "data": {
+    "project": { "id": "proj_123", "name": "Minha Loja", "slug": "minha-loja" },
+    "seller": {
+      "email": "vendedor@exemplo.com",
+      "display_name": null,
+      "document": null,
+      "document_type": null
+    },
+    "customer": {
+      "email": "cliente@exemplo.com",
+      "name": "Maria Silva",
+      "first_name": "Maria",
+      "last_name": "Silva",
+      "document": "12345678909",
+      "document_type": "CPF",
+      "phone": null
+    },
+    "products": [
+      {
+        "id": "prod_123",
+        "name": "Produto de exemplo",
+        "type": "one_time",
+        "status": "active",
+        "offer": { "id": null, "name": null },
+        "pricing": {
+          "original": { "value": 97.0, "cents": 9700, "currency": "BRL" },
+          "discount": { "value": 0.0, "cents": 0, "currency": "BRL" },
+          "final": { "value": 97.0, "cents": 9700, "currency": "BRL" }
+        }
+      }
+    ],
+    "coupon": { "id": null, "code": null, "discount_type": null, "discount_value": null },
+    "amounts": {
+      "gross": { "value": 97.0, "cents": 9700, "currency": "BRL" },
+      "discount": { "value": 0.0, "cents": 0, "currency": "BRL" },
+      "final": { "value": 97.0, "cents": 9700, "currency": "BRL" },
+      "seller_amount": { "value": 90.22, "cents": 9022, "currency": "BRL" },
+      "marketplace_amount": { "value": 6.78, "cents": 678, "currency": "BRL" }
+    },
+    "payment": {
+      "internal_id": "pay_abc123",
+      "status": "approved",
+      "status_detail": "accredited",
+      "method": { "id": "pix", "type": "pix", "installments": 1 },
+      "failure": null,
+      "dates": {
+        "created_at": "2026-07-01T12:00:00Z",
+        "approved_at": "2026-07-01T12:00:00Z",
+        "failed_at": null,
+        "refunded_at": null
+      }
+    },
+    "checkout": { "source": "checkout", "is_direct": null },
+    "subscription": null,
+    "metadata": { "trigger": "payment.approved", "request_id": null, "origin": "checkout" }
+  }
+}
+```
+
+```json payment.rejected
+{
+  "id": "evt_0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+  "event": "payment.rejected",
+  "version": "1.0.0",
+  "created_at": "2026-07-01T12:05:00Z",
+  "environment": "production",
+  "data": {
+    "payment": {
+      "internal_id": "pay_def456",
+      "status": "rejected",
+      "status_detail": "cc_rejected_insufficient_amount",
+      "method": { "id": "visa", "type": "credit_card", "installments": 3 },
+      "failure": {
+        "source": "provider",
+        "code": "cc_rejected_insufficient_amount",
+        "message": "cc_rejected_insufficient_amount",
+        "retryable": false
+      },
+      "dates": {
+        "created_at": "2026-07-01T12:05:00Z",
+        "approved_at": null,
+        "failed_at": "2026-07-01T12:05:00Z",
+        "refunded_at": null
+      }
+    },
+    "subscription": null,
+    "metadata": { "trigger": "payment.rejected", "request_id": null, "origin": "checkout" }
+  }
+}
+```
+</CodeGroup>
+
+<Note>
+  Os exemplos acima usam valores de **produção**, já enriquecidos. Em eventos de **teste** (ambiente `development`/`sandbox`), os campos que dependem de consulta ao banco chegam vazios: `project.name`, `project.slug`, `products[].name`, `products[].type` e `products[].status` vêm `null`, e `payment.status_detail` pode vir `""`. Além disso, em erros de teste o `payment.failure.source` vem como `internal` — em produção, recusas externas vêm como `provider`.
+</Note>
+
+### Bloco `data.payment`
+
+<ParamField path="internal_id" type="string">
+  Identificador interno da Yeon para o pagamento.
+</ParamField>
+
+<ParamField path="status" type="string">
+  Status da transação. Veja os valores em [Eventos](/webhooks/eventos#status-de-pagamento).
+</ParamField>
+
+<ParamField path="status_detail" type="string">
+  Detalhe do status, por exemplo `accredited` ou `cc_rejected_insufficient_amount`.
+</ParamField>
+
+<ParamField path="method" type="object">
+  Meio de pagamento: `id`, `type` (`credit_card`, `debit_card`, `pix`, `boleto`, …) e `installments` (número de parcelas).
+</ParamField>
+
+<ParamField path="failure" type="object | null">
+  `null` quando `status` é `approved` ou `pending`. Nos demais status traz `source` (`provider` para erros externos, `internal` para erros internos), `code`, `message` e `retryable`.
+
+  Em `refunded` o objeto vem **presente**, porém com `code`, `message` e `retryable` iguais a `null`. Verifique `failure.code`, não apenas se `failure` existe.
+</ParamField>
+
+<ParamField path="dates" type="object">
+  Marcos temporais em UTC: `created_at`, `approved_at`, `failed_at` e `refunded_at`. Cada um é preenchido conforme o status; os demais ficam `null`.
+</ParamField>
+
+### Demais blocos
+
+<ParamField path="project" type="object">
+  Projeto da transação: `id`, `name`, `slug`.
+</ParamField>
+
+<ParamField path="seller" type="object">
+  Vendedor: `email`, `display_name`, `document`, `document_type`. O `email` é a chave de roteamento do webhook.
+</ParamField>
+
+<ParamField path="customer" type="object">
+  Comprador: `email`, `name`, `first_name`, `last_name`, `document`, `document_type`, `phone`.
+</ParamField>
+
+<ParamField path="products" type="object[]">
+  Itens da transação. Cada um traz `id`, `name`, `type`, `status`, `offer` e `pricing` (com `original`, `discount` e `final`).
+</ParamField>
+
+<ParamField path="coupon" type="object">
+  Cupom aplicado: `id`, `code`, `discount_type`, `discount_value`. Campos ficam `null` quando não há cupom.
+</ParamField>
+
+<ParamField path="amounts" type="object">
+  Totais da transação: `gross`, `discount`, `final`, `seller_amount` (líquido do vendedor) e `marketplace_amount` (taxa da plataforma).
+</ParamField>
+
+<ParamField path="checkout" type="object">
+  Origem: `source` (`checkout` ou `api`) e `is_direct`.
+</ParamField>
+
+## Payload de assinatura
+
+Enviado nos eventos `subscription.*`. Nesses eventos, `data.payment` é `null` e os dados ficam em `data.subscription`.
+
+```json subscription.created
+{
+  "id": "evt_1122aabb-ccdd-eeff-0011-223344556677",
+  "event": "subscription.created",
+  "version": "1.0.0",
+  "created_at": "2026-07-01T12:00:00Z",
+  "environment": "production",
+  "data": {
+    "project": { "id": "proj_123", "name": "Minha Loja", "slug": "minha-loja" },
+    "seller": { "email": "vendedor@exemplo.com", "display_name": null, "document": null, "document_type": null },
+    "customer": {
+      "email": "cliente@exemplo.com",
+      "name": "Maria Silva",
+      "first_name": "Maria",
+      "last_name": "Silva",
+      "document": "12345678909",
+      "document_type": "CPF",
+      "phone": null
+    },
+    "products": [
+      {
+        "id": "prod_123",
+        "name": "Assinatura de exemplo",
+        "type": null,
+        "status": null,
+        "offer": { "id": null, "name": null },
+        "pricing": {
+          "original": { "value": 49.9, "cents": 4990, "currency": "BRL" },
+          "discount": { "value": 0.0, "cents": 0, "currency": "BRL" },
+          "final": { "value": 49.9, "cents": 4990, "currency": "BRL" }
+        }
+      }
+    ],
+    "coupon": null,
+    "amounts": {
+      "gross": { "value": 49.9, "cents": 4990, "currency": "BRL" },
+      "discount": { "value": 0.0, "cents": 0, "currency": "BRL" },
+      "final": { "value": 49.9, "cents": 4990, "currency": "BRL" },
+      "seller_amount": null,
+      "marketplace_amount": null
+    },
+    "payment": null,
+    "checkout": null,
+    "subscription": {
+      "id": "sub_abc123",
+      "status": "active",
+      "current_cycle": 2,
+      "plan": {
+        "amount": { "value": 49.9, "cents": 4990, "currency": "BRL" },
+        "interval_days": 30
+      },
+      "billing": { "payment_method_id": "pix" },
+      "period": {
+        "current_period_start": "2026-06-16T12:00:00Z",
+        "current_period_end": "2026-07-16T12:00:00Z",
+        "next_charge_at": "2026-07-16T12:00:00Z",
+        "last_charge_at": "2026-06-16T12:00:00Z"
+      },
+      "retry": { "retry_count": 0, "next_retry_at": null },
+      "last_payment_id": null
+    },
+    "metadata": { "trigger": "subscription.created", "request_id": null, "origin": "subscription" }
+  }
+}
+```
+
+### Bloco `data.subscription`
+
+<ParamField path="id" type="string">
+  Identificador interno da Yeon para a assinatura.
+</ParamField>
+
+<ParamField path="status" type="string">
+  Status da assinatura. Veja os valores em [Eventos](/webhooks/eventos#status-de-assinatura).
+</ParamField>
+
+<ParamField path="current_cycle" type="number">
+  Ciclo de cobrança atual.
+</ParamField>
+
+<ParamField path="plan" type="object">
+  Plano: `amount` (valor recorrente) e `interval_days` (intervalo entre cobranças).
+</ParamField>
+
+<ParamField path="billing" type="object">
+  Cobrança: `payment_method_id`.
+</ParamField>
+
+<ParamField path="period" type="object">
+  Período vigente: `current_period_start`, `current_period_end`, `next_charge_at` e `last_charge_at` (este pode ser `null`).
+</ParamField>
+
+<ParamField path="retry" type="object">
+  Retentativas: `retry_count` e `next_retry_at` (`null` quando não há retentativa agendada).
+</ParamField>
+
+<ParamField path="last_payment_id" type="number | null">
+  ID do último pagamento da assinatura; `null` quando ainda não houve cobrança.
+</ParamField>
