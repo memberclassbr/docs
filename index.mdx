@@ -5,15 +5,23 @@ description: "Integre pagamentos, assinaturas e webhooks de transações da Yeon
 
 A Yeon processa pagamentos e assinaturas e notifica sua aplicação em tempo real por meio de **webhooks**. Sempre que uma transação muda de estado — um pagamento é aprovado, um reembolso é feito, uma assinatura é renovada — a Yeon envia uma requisição HTTP para a URL que você configurar.
 
-Esta seção documenta os webhooks de transação disponíveis até o momento.
+Além dos webhooks, a **API pública** permite consultar os dados do seu projeto de forma programática, autenticando com um token de API gerado no Painel.
 
-<Card title="Comece pelos webhooks" icon="webhook" href="/webhooks/introducao">
-  Configure um endpoint, receba eventos e valide as entregas.
-</Card>
+<Columns cols={2}>
+  <Card title="Comece pelos webhooks" icon="webhook" href="/webhooks/introducao">
+    Configure um endpoint, receba eventos e valide as entregas.
+  </Card>
+  <Card title="API pública" icon="code" href="/api/introducao">
+    Autenticação, paginação e o endpoint de listagem de produtos.
+  </Card>
+</Columns>
 
 ## O que você encontra aqui
 
 <Columns cols={2}>
+  <Card title="Lista produtos" icon="box" href="/api/listar-produtos">
+    Consulte os produtos do seu projeto via API, com ofertas e link de checkout.
+  </Card>
   <Card title="Eventos" icon="list" href="/webhooks/eventos">
     Catálogo dos eventos de pagamento e assinatura e os status de transação.
   </Card>
