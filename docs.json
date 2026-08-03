@@ -17,6 +17,13 @@
         ]
       },
       {
+        "group": "API",
+        "pages": [
+          "api/introducao",
+          "api/listar-produtos"
+        ]
+      },
+      {
         "group": "Webhooks",
         "pages": [
           "webhooks/introducao",
