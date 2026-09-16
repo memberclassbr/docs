@@ -2319,6 +2319,208 @@
           "products"
         ]
       }
+    },
+    "/api/public/v1/subscriptions": {
+      "get": {
+        "operationId": "listSubscriptions",
+        "summary": "Lista assinaturas",
+        "description": "Lista as assinaturas do projeto. A resposta traz `subscriptions` e `total`.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filtra pelo status da assinatura.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "external_reference",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "subscriptions": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Subscription"
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "description": "Total que casa com o filtro, ignorando a paginação."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão subscription:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/api/public/v1/subscriptions/{id}": {
+      "get": {
+        "operationId": "getSubscription",
+        "summary": "Detalha uma assinatura",
+        "description": "Detalha a assinatura, com o histórico real de cobranças e, em charge_mode `manual_pix`, a fatura Pix aberta do ciclo.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da assinatura (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Subscription"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão subscription:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a assinatura não existe, não pertence ao projeto da chave, ou pertence a outro projeto da mesma conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "subscriptions"
+        ]
+      }
     }
   },
   "components": {
@@ -3409,6 +3611,208 @@
             "type": "integer",
             "format": "int64",
             "description": "Mesmo dia do mês anterior."
+          }
+        }
+      },
+      "Subscription": {
+        "type": "object",
+        "description": "Uma assinatura. O motor é da Yeon, com cobrança direta: não há preapproval no provedor, e a cadência é interval + interval_count, sem pro-rata (ADRs 0012 e 0013). NENHUM dado de cartão é devolvido nestas leituras — nem a máscara, nem o id do cartão no cofre do provedor, que é com o que se cobraria o cartão salvo. Para ligar a assinatura ao cliente, use customer_email: é o identificador que a API de clientes aceita.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "description": "`incomplete` numa adesão por Pix ainda não paga; `past_due` e `unpaid` marcam o atraso."
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "customer_email": {
+            "type": "string",
+            "format": "email",
+            "description": "Elo com o cliente: a API de clientes aceita este e-mail como identificador."
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor do ciclo, em CENTAVOS, já com o desconto de cupom quando houver."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "interval": {
+            "type": "string"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/SubscriptionPlan"
+          },
+          "current_cycle": {
+            "type": "integer"
+          },
+          "trial_end": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "current_period_start": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "current_period_end": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancel_at_period_end": {
+            "type": "boolean"
+          },
+          "cancelled_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "retry_count": {
+            "type": "integer"
+          },
+          "next_retry_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "next_charge_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_charge_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "last_payment_id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Provedor que processa a cobrança."
+          },
+          "external_reference": {
+            "type": "string"
+          },
+          "seller_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "charge_mode": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "manual_pix"
+            ],
+            "description": "Quem dispara o próximo ciclo: o cartão salvo, ou uma fatura Pix que o comprador paga (ADR 0026)."
+          },
+          "pix_invoice": {
+            "$ref": "#/components/schemas/SubscriptionPixInvoice"
+          },
+          "manual_charge_available": {
+            "type": "boolean",
+            "description": "true quando as tentativas automáticas acabaram e a cobrança manual única ainda não foi usada."
+          },
+          "manual_charge_used_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionPayment"
+            },
+            "description": "Histórico real de cobranças, da mais recente para a mais antiga. Só no detalhe."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SubscriptionPayment": {
+        "type": "object",
+        "description": "Uma cobrança real do histórico — adesão ou renovação.",
+        "properties": {
+          "gateway_charge_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cycle": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SubscriptionPixInvoice": {
+        "type": "object",
+        "description": "A fatura Pix ABERTA do ciclo. Só existe em charge_mode `manual_pix`. Numa adesão por Pix a assinatura volta `incomplete` COM esta fatura: não é recusa, é o estado normal enquanto o QR não foi pago.",
+        "properties": {
+          "payment_id": {
+            "type": "string",
+            "description": "Id da cobrança na Yeon — o que as rotas públicas de QR e status aceitam. Não é o id do provedor."
+          },
+          "status": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cycle": {
+            "type": "integer"
+          },
+          "pix_copy_paste": {
+            "type": "string"
+          },
+          "pix_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "SubscriptionPlan": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Valor do plano como texto decimal (ex.: \"99.00\"). Para cálculo, use amount_cents da assinatura."
+          },
+          "interval_days": {
+            "type": "integer"
           }
         }
       },

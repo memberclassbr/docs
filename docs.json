@@ -73,6 +73,13 @@
         ]
       },
       {
+        "group": "Assinaturas",
+        "pages": [
+          "api/assinaturas/listar",
+          "api/assinaturas/detalhar"
+        ]
+      },
+      {
         "group": "Webhooks",
         "pages": [
           "webhooks/introducao",
