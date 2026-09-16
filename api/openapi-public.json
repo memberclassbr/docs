@@ -1574,6 +1574,555 @@
         ]
       }
     },
+    "/api/public/v1/customers": {
+      "get": {
+        "operationId": "listCustomers",
+        "summary": "Lista clientes",
+        "description": "Lista os compradores do projeto, com totais já calculados. Devolve um array simples; use limit e offset para paginar.",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Busca por nome ou e-mail.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filtra pelo status do último pagamento.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "min_value_cents",
+            "in": "query",
+            "description": "Total gasto mínimo, em CENTAVOS.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "max_value_cents",
+            "in": "query",
+            "description": "Total gasto máximo, em CENTAVOS.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Customer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — identificador de cliente inválido (nem e-mail nem `cust_…`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão customer:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "customers"
+        ]
+      }
+    },
+    "/api/public/v1/customers/{id}": {
+      "get": {
+        "operationId": "getCustomer",
+        "summary": "Detalha um cliente",
+        "description": "Detalha um comprador do projeto, incluindo o endereço de cobrança quando o checkout o coletou.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do cliente. Aceita o e-mail do comprador OU o `cust_…` devolvido pela listagem — que é o mesmo e-mail em base64url, e portanto NÃO é um identificador opaco: não o trate como anonimizado nem o use como chave estável se o comprador trocar de e-mail.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "comprador@example.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Customer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — identificador de cliente inválido (nem e-mail nem `cust_…`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão customer:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o cliente não existe neste projeto. Não distingue de 'existe em outro projeto': distinguir permitiria sondar compradores alheios.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "customers"
+        ]
+      }
+    },
+    "/api/public/v1/customers/{id}/abandoned-carts": {
+      "get": {
+        "operationId": "listCustomerAbandonedCarts",
+        "summary": "Carrinhos abandonados de um cliente",
+        "description": "Lista os checkouts que este comprador iniciou e não concluiu.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do cliente. Aceita o e-mail do comprador OU o `cust_…` devolvido pela listagem — que é o mesmo e-mail em base64url, e portanto NÃO é um identificador opaco: não o trate como anonimizado nem o use como chave estável se o comprador trocar de e-mail.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "comprador@example.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AbandonedCart"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — identificador de cliente inválido (nem e-mail nem `cust_…`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão customer:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o cliente não existe neste projeto. Não distingue de 'existe em outro projeto': distinguir permitiria sondar compradores alheios.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "customers"
+        ]
+      }
+    },
+    "/api/public/v1/customers/{id}/events": {
+      "get": {
+        "operationId": "listCustomerEvents",
+        "summary": "Histórico de eventos de um cliente",
+        "description": "Lista as entregas de webhook disparadas por todos os pedidos deste comprador, da mais recente para a mais antiga.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do cliente. Aceita o e-mail do comprador OU o `cust_…` devolvido pela listagem — que é o mesmo e-mail em base64url, e portanto NÃO é um identificador opaco: não o trate como anonimizado nem o use como chave estável se o comprador trocar de e-mail.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "comprador@example.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EventDelivery"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — identificador de cliente inválido (nem e-mail nem `cust_…`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão customer:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o cliente não existe neste projeto. Não distingue de 'existe em outro projeto': distinguir permitiria sondar compradores alheios.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "customers"
+        ]
+      }
+    },
+    "/api/public/v1/customers/{id}/orders": {
+      "get": {
+        "operationId": "listCustomerOrders",
+        "summary": "Pedidos de um cliente",
+        "description": "Lista os pedidos deste comprador no projeto, do mais recente para o mais antigo.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do cliente. Aceita o e-mail do comprador OU o `cust_…` devolvido pela listagem — que é o mesmo e-mail em base64url, e portanto NÃO é um identificador opaco: não o trate como anonimizado nem o use como chave estável se o comprador trocar de e-mail.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "comprador@example.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CustomerOrder"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — identificador de cliente inválido (nem e-mail nem `cust_…`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão customer:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o cliente não existe neste projeto. Não distingue de 'existe em outro projeto': distinguir permitiria sondar compradores alheios.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "customers"
+        ]
+      }
+    },
     "/api/public/v1/payments/{paymentID}/refunds": {
       "get": {
         "operationId": "listPaymentRefunds",
@@ -1774,6 +2323,55 @@
   },
   "components": {
     "schemas": {
+      "AbandonedCart": {
+        "type": "object",
+        "description": "Um checkout iniciado e não concluído por este comprador.",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offer_name": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "price_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "attempts_count": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "BillingSummary": {
         "type": "object",
         "description": "Os indicadores do mês, já calculados pela Yeon. net_revenue é o que FICOU com este projeto: numa venda co-produzida, `valor − taxa` não é o líquido do produtor, porque a fatia do co-produtor sai na mesma transação (ADR 0022).",
@@ -2190,6 +2788,169 @@
           },
           "active": {
             "type": "boolean"
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "description": "Um comprador do projeto, com os totais já calculados. Não existe cadastro de cliente na Yeon: o comprador nasce da compra (ou de um checkout iniciado), e por isso a API não cria nem edita clientes.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "`cust_` + e-mail em base64url. Reversível — ver a descrição do parâmetro de caminho.",
+            "example": "cust_Y29tcHJhZG9yQGV4YW1wbGUuY29t"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "document": {
+            "type": "string",
+            "nullable": true,
+            "description": "CPF ou CNPJ, quando o checkout o coletou."
+          },
+          "total_spent_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Soma aprovada, em CENTAVOS."
+          },
+          "purchase_count": {
+            "type": "integer"
+          },
+          "attempts_count": {
+            "type": "integer",
+            "description": "Tentativas de pagamento, aprovadas ou não."
+          },
+          "attempted_amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refunded_orders": {
+            "type": "integer"
+          },
+          "refunded_amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "distinct_products": {
+            "type": "integer"
+          },
+          "abandoned_carts_count": {
+            "type": "integer"
+          },
+          "average_ticket_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "conversion_rate": {
+            "type": "number",
+            "format": "double"
+          },
+          "last_payment_status": {
+            "type": "string"
+          },
+          "preferred_payment_method": {
+            "type": "string"
+          },
+          "last_approved_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "last_purchase_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "last_session_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "is_lead": {
+            "type": "boolean",
+            "description": "Derivado: iniciou checkout, nunca comprou e não tem assinatura ativa."
+          },
+          "billing_address": {
+            "$ref": "#/components/schemas/CustomerAddress"
+          }
+        }
+      },
+      "CustomerAddress": {
+        "type": "object",
+        "properties": {
+          "street_name": {
+            "type": "string"
+          },
+          "street_number": {
+            "type": "string"
+          },
+          "neighborhood": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "zip_code": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomerOrder": {
+        "type": "object",
+        "description": "Um pedido deste comprador. Para a venda completa (taxas, linhas, tentativas), use o detalhe da transação.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Id do pedido (`ON…`)."
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "payment_method": {
+            "type": "string"
+          },
+          "installments": {
+            "type": "integer"
+          },
+          "payment_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

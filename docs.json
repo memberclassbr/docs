@@ -63,6 +63,16 @@
         ]
       },
       {
+        "group": "Clientes",
+        "pages": [
+          "api/clientes/listar",
+          "api/clientes/detalhar",
+          "api/clientes/pedidos",
+          "api/clientes/carrinhos",
+          "api/clientes/eventos"
+        ]
+      },
+      {
         "group": "Webhooks",
         "pages": [
           "webhooks/introducao",
