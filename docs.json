@@ -87,6 +87,13 @@
         ]
       },
       {
+        "group": "Financeiro",
+        "pages": [
+          "api/financeiro/liberacoes",
+          "api/financeiro/disponiveis-para-saque"
+        ]
+      },
+      {
         "group": "Webhooks",
         "pages": [
           "webhooks/introducao",

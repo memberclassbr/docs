@@ -2334,6 +2334,162 @@
         ]
       }
     },
+    "/api/public/v1/ledger/available-withdrawals": {
+      "get": {
+        "operationId": "listAvailableWithdrawals",
+        "summary": "Cobranças disponíveis para saque",
+        "description": "Lista as cobranças que podem entrar num pedido de saque agora, com o líquido real de cada uma. A SOLICITAÇÃO de saque é outra operação, e continua sendo um pedido ao back-office — a Yeon não transfere sozinha.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AvailableWithdrawal"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — parâmetro de paginação inválido, ou limit acima de 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão ledger:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "financial"
+        ]
+      }
+    },
+    "/api/public/v1/ledger/releases": {
+      "get": {
+        "operationId": "listUpcomingReleases",
+        "summary": "Liberações previstas",
+        "description": "Lista as retenções que ainda vão vencer, da mais próxima para a mais distante.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/HoldingRelease"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — parâmetro de paginação inválido, ou limit acima de 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão ledger:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "financial"
+        ]
+      }
+    },
     "/api/public/v1/payments/{paymentID}/refunds": {
       "get": {
         "operationId": "listPaymentRefunds",
@@ -2780,6 +2936,27 @@
             "format": "date-time"
           },
           "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AvailableWithdrawal": {
+        "type": "object",
+        "description": "Uma cobrança elegível para entrar num pedido de saque AGORA: retenção vencida, sem disputa aberta, ainda não paga e ainda não reservada em outro pedido.",
+        "properties": {
+          "payment_id": {
+            "type": "string"
+          },
+          "seller_net_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O líquido real do produtor nesta cobrança, já sem taxa e sem as fatias de terceiros."
+          },
+          "description": {
+            "type": "string"
+          },
+          "date": {
             "type": "string",
             "format": "date-time"
           }
@@ -3644,6 +3821,27 @@
           "revenue_cents": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "HoldingRelease": {
+        "type": "object",
+        "description": "Uma liberação de retenção ainda por vencer. O prazo é por PROJETO e por método, em dias corridos, e a data é carimbada na aprovação da venda — o primeiro carimbo vence, e nem o webhook nem o back-office a recalculam (ADR 0018).",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "release_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "type": "string",
+            "description": "O que gera a liberação: a venda do produtor, ou uma fatia de afiliado/co-produção, que tem relógio próprio."
           }
         }
       },
