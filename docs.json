@@ -148,6 +148,25 @@
         ]
       },
       {
+        "group": "Afiliados",
+        "pages": [
+          "api/afiliados/programa",
+          "api/afiliados/configurar-programa",
+          "api/afiliados/listar-afiliados",
+          "api/afiliados/aprovar",
+          "api/afiliados/bloquear",
+          "api/afiliados/percentual",
+          "api/afiliados/ofertas-do-afiliado",
+          "api/afiliados/definir-ofertas",
+          "api/afiliados/minhas-afiliacoes",
+          "api/afiliados/produtos-afiliados",
+          "api/afiliados/detalhar-produto-afiliado",
+          "api/afiliados/consultar-programa",
+          "api/afiliados/aderir",
+          "api/afiliados/sair"
+        ]
+      },
+      {
         "group": "Webhooks",
         "pages": [
           "webhooks/introducao",

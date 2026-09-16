@@ -6319,6 +6319,1340 @@
         ]
       }
     },
+    "/api/public/v1/products/{id}/affiliate-program": {
+      "get": {
+        "operationId": "getAffiliateProgram",
+        "summary": "Consulta o programa de afiliados do produto",
+        "description": "O programa é do PRODUTO, e o produto precisa ser do projeto da chave. Produto de outro projeto da mesma conta responde 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AffiliateProgram"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não é do projeto da chave, ou ainda não tem programa (`AFFILIATE_PROGRAM_NOT_FOUND`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      },
+      "put": {
+        "operationId": "upsertAffiliateProgram",
+        "summary": "Cria ou atualiza o programa de afiliados",
+        "description": "Cria o programa na primeira chamada e substitui a configuração nas seguintes.\n\n`default_percent` é a comissão padrão: **1 a 95**, inteiro. `mode` decide se a adesão é automática (`open`) ou passa por você (`approval`). `attribution` é `first` ou `last` (qual clique leva a venda). `cookie_days` é a janela de atribuição e `recurring_cycles` quantos ciclos de uma assinatura comissionam (`null` = todos, `0` = só o primeiro).\n\nA **retenção** da comissão não é configurável aqui: nasce da plataforma e o back-office a ajusta.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AffiliateProgramInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AffiliateProgram"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — configuração inválida do programa, percentual fora de 1–95, ou janela/ciclos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não existe, não é da conta da chave, ou é de OUTRO projeto da mesma conta. As três respostas são idênticas de propósito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/products/{id}/affiliations": {
+      "get": {
+        "operationId": "listProductAffiliations",
+        "summary": "Lista quem é afiliado ao produto",
+        "description": "O programa e as afiliações do produto, em todos os estados (`requested`, `active`, `blocked`, `left`). Traz o e-mail e o nome de quem pediu afiliação — é o que permite moderar o pedido.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProductAffiliations"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não existe, não é da conta da chave, ou é de OUTRO projeto da mesma conta. As três respostas são idênticas de propósito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliations/{id}/approve": {
+      "post": {
+        "operationId": "approveAffiliation",
+        "summary": "Aprova um pedido de afiliação",
+        "description": "Ativa a afiliação e libera o código de divulgação. A elegibilidade é **relida na aprovação**: um pedido pode esperar dias, e nesse meio-tempo a pessoa pode ter virado co-produtora do mesmo produto — o que é recusado com `AFFILIATE_COPRODUCER`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da afiliação (UUID), como devolvido por `listProductAffiliations`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `AFFILIATE_COPRODUCER`: um co-produtor ativo não pode se afiliar ao mesmo produto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a afiliação não existe, não é de um produto da conta da chave, ou é de um produto de OUTRO projeto da mesma conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliations/{id}/block": {
+      "post": {
+        "operationId": "blockAffiliation",
+        "summary": "Bloqueia um afiliado",
+        "description": "Encerra a divulgação: o código para de atribuir vendas novas. Fatias já registradas em vendas anteriores não são tocadas — o dinheiro que já entrou tem dono.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da afiliação (UUID), como devolvido por `listProductAffiliations`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AffiliationBlockInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "blocked"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a afiliação não existe, não é de um produto da conta da chave, ou é de um produto de OUTRO projeto da mesma conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliations/{id}/percent": {
+      "put": {
+        "operationId": "changeAffiliationPercent",
+        "summary": "Altera a comissão de um afiliado",
+        "description": "O percentual desta afiliação, entre 1 e 95. Vale para vendas FUTURAS: a fatia de cada venda é carimbada quando o dinheiro se move, e mudar o acordo não move dinheiro que já entrou.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da afiliação (UUID), como devolvido por `listProductAffiliations`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AffiliationPercentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "updated"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — a porcentagem deve ser um inteiro entre 1 e 95.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a afiliação não existe, não é de um produto da conta da chave, ou é de um produto de OUTRO projeto da mesma conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliation-offers/{id}": {
+      "get": {
+        "operationId": "getAffiliationOfferAccess",
+        "summary": "Consulta quais ofertas o afiliado comissiona",
+        "description": "`mode: all` é o padrão (todas as ofertas do produto). `mode: selected` limita a comissão e a vitrine do afiliado às ofertas escolhidas. A lista `offers` traz todas as ofertas do produto, para você montar a seleção.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da afiliação (UUID), como devolvido por `listProductAffiliations`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AffiliationOfferAccess"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a afiliação não existe, não é de um produto da conta da chave, ou é de um produto de OUTRO projeto da mesma conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      },
+      "put": {
+        "operationId": "setAffiliationOfferAccess",
+        "summary": "Define quais ofertas o afiliado comissiona",
+        "description": "Em `mode: selected`, `offer_ids` é a seleção completa — **seleção vazia é válida** e significa que nenhuma oferta comissiona. Em `mode: all`, `offer_ids` precisa vir vazio.\n\nA regra é relida na APROVAÇÃO da venda, então mudar a seleção vale para vendas futuras; fatias já registradas ficam.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da afiliação (UUID), como devolvido por `listProductAffiliations`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AffiliationOfferAccessInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "updated"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — modo inválido, `offer_ids` junto do modo `all`, ou seleção com id inválido/repetido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a afiliação não existe, não é de um produto da conta da chave, ou é de um produto de OUTRO projeto da mesma conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliations": {
+      "get": {
+        "operationId": "listMyAffiliations",
+        "summary": "Lista as afiliações do projeto",
+        "description": "As afiliações em que o projeto da chave é o AFILIADO — o que você promove, não o que você vende. Afiliação apontada para outro projeto da sua conta não aparece.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Affiliation"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliations/products": {
+      "get": {
+        "operationId": "listAffiliatedProducts",
+        "summary": "Lista os produtos que você promove",
+        "description": "A vitrine do afiliado: os produtos das suas afiliações ATIVAS, com as ofertas que comissionam, os cupons elegíveis e o seu código de divulgação.\n\nNão traz compradores, pedidos nem transações do produtor — o afiliado vê a própria participação, não a operação de quem vende.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AffiliatedProduct"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliations/products/{id}": {
+      "get": {
+        "operationId": "getAffiliatedProduct",
+        "summary": "Detalha um produto que você promove",
+        "description": "O mesmo conteúdo de `listAffiliatedProducts`, para um produto. Produto que você não promove pelo projeto da chave responde 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AffiliatedProduct"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — você não tem afiliação ativa a este produto pelo projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliate-programs/{public_id}": {
+      "get": {
+        "operationId": "previewAffiliateProgram",
+        "summary": "Consulta um programa pelo código público",
+        "description": "A visão de quem está pensando em se afiliar: percentual padrão, modo de adesão, janela de atribuição e ciclos. `my_status` diz onde você já está nesse programa, e `join_blocked_reason` explica quando a adesão não é possível (KYC pendente, co-produção do mesmo produto, programa pausado).",
+        "parameters": [
+          {
+            "name": "public_id",
+            "in": "path",
+            "required": true,
+            "description": "Código público do programa (`ap_` + 10 caracteres).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AffiliateProgramPreview"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — `AFFILIATE_PROGRAM_NOT_FOUND`: não existe programa com esse código.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliate-programs/{public_id}/join": {
+      "post": {
+        "operationId": "joinAffiliateProgram",
+        "summary": "Pede afiliação a um programa",
+        "description": "Cria o pedido. Em programa `open` a afiliação já nasce **ativa**, com o código de divulgação pronto; em `approval` fica `requested` até o produtor aprovar.\n\nA comissão é recebida no **projeto da chave** — não há escolha de projeto de destino aqui. `project_id` é opcional e, se enviado, precisa ser o projeto da chave; qualquer outro é `400 DESTINATION_PROJECT_MISMATCH`.\n\nO projeto precisa de **KYC aprovado**: é para onde o dinheiro vai.",
+        "parameters": [
+          {
+            "name": "public_id",
+            "in": "path",
+            "required": true,
+            "description": "Código público do programa (`ap_` + 10 caracteres).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AffiliationJoinInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK — a afiliação criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Affiliation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `DESTINATION_PROJECT_MISMATCH`: o `project_id` enviado não é o projeto da chave. `AFFILIATE_PROJECT_REQUIRED`. `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:write (error_code API_TOKEN_SCOPE_MISSING). `KYC_NOT_APPROVED`: conclua o KYC do projeto antes de se afiliar. `AFFILIATE_PROJECT_NOT_OWNED`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — `AFFILIATE_PROGRAM_NOT_FOUND`: não existe programa com esse código.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `AFFILIATE_PROGRAM_PAUSED`, `AFFILIATE_ALREADY_JOINED`, `AFFILIATE_COPRODUCER` (você é co-produtor deste produto), `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
+    "/api/public/v1/affiliations/{id}/leave": {
+      "post": {
+        "operationId": "leaveAffiliation",
+        "summary": "Sai de uma afiliação",
+        "description": "Encerra a sua afiliação. O código para de atribuir vendas novas; as comissões já registradas continuam suas e seguem o relógio de retenção delas.\n\nSó afiliação do projeto da chave: a de outro projeto da mesma conta responde 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da afiliação (UUID), como devolvido por `listMyAffiliations`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "left"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão affiliate:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a afiliação não é sua, ou é de outro projeto da sua conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "afiliados"
+        ]
+      }
+    },
     "/api/public/v1/subscriptions": {
       "get": {
         "operationId": "listSubscriptions",
@@ -7239,6 +8573,573 @@
           "expires_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "AffiliateProgram": {
+        "type": "object",
+        "description": "O programa de afiliados de um produto.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "public_id": {
+            "type": "string",
+            "description": "Código público do programa (`ap_` + 10 caracteres). É o que se divulga para atrair afiliados."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "open",
+              "approval"
+            ],
+            "description": "`open`: a adesão já nasce ativa. `approval`: fica pendente até você aprovar."
+          },
+          "default_percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Percentual da comissão sobre o líquido da venda. Inteiro de 1 a 95."
+          },
+          "cookie_days": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Janela de atribuição em dias."
+          },
+          "attribution": {
+            "type": "string",
+            "enum": [
+              "first",
+              "last"
+            ],
+            "description": "Qual clique leva a venda."
+          },
+          "recurring_cycles": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Quantos ciclos de uma assinatura comissionam. `null` = todos; `0` = só a primeira cobrança."
+          },
+          "holding_days": {
+            "type": "integer",
+            "description": "Retenção da comissão em dias corridos. Não é configurável por aqui: nasce da plataforma."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AffiliateProgramInput": {
+        "type": "object",
+        "description": "Configuração do programa. Campos omitidos assumem o padrão: `status: active`, `mode: approval`, `attribution: last`.",
+        "required": [
+          "default_percent"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "open",
+              "approval"
+            ]
+          },
+          "default_percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Percentual da comissão sobre o líquido da venda. Inteiro de 1 a 95."
+          },
+          "cookie_days": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          },
+          "attribution": {
+            "type": "string",
+            "enum": [
+              "first",
+              "last"
+            ]
+          },
+          "recurring_cycles": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          }
+        }
+      },
+      "AffiliateProgramPreview": {
+        "type": "object",
+        "description": "A visão de quem pensa em se afiliar. Não expõe a operação do produtor.",
+        "properties": {
+          "public_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "producer_name": {
+            "type": "string"
+          },
+          "default_percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Percentual da comissão sobre o líquido da venda. Inteiro de 1 a 95."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "open",
+              "approval"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused"
+            ]
+          },
+          "recurring_cycles": {
+            "type": "integer",
+            "nullable": true
+          },
+          "cookie_days": {
+            "type": "integer",
+            "nullable": true
+          },
+          "my_status": {
+            "type": "string",
+            "description": "Onde o projeto da chave já está neste programa: vazio, `requested`, `active`, `blocked` ou `left`."
+          },
+          "my_affiliation_id": {
+            "type": "string",
+            "description": "Id da sua afiliação, quando já existe."
+          },
+          "my_project_id": {
+            "type": "string",
+            "description": "Projeto pelo qual você já se afiliou, quando já existe."
+          },
+          "join_blocked_reason": {
+            "type": "string",
+            "description": "Por que a adesão não é possível agora (KYC pendente, co-produção do mesmo produto, programa pausado). Vazio quando dá para aderir."
+          }
+        }
+      },
+      "AffiliatedCoupon": {
+        "type": "object",
+        "description": "Condições públicas do cupom. A gestão dele e as outras afiliações continuam privadas.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "discount_type": {
+            "type": "string"
+          },
+          "discount_value": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offer_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "subscription_apply": {
+            "type": "string"
+          },
+          "min_order_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first_purchase_only": {
+            "type": "boolean"
+          },
+          "max_uses_per_customer": {
+            "type": "integer"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "AffiliatedOffer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "public_id": {
+            "type": "string",
+            "description": "É o `{public_id}` do link de checkout."
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "price_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Em centavos."
+          },
+          "type": {
+            "type": "string"
+          },
+          "interval": {
+            "type": "string",
+            "nullable": true
+          },
+          "interval_count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recurring_interval": {
+            "type": "string",
+            "nullable": true
+          },
+          "max_installments": {
+            "type": "integer"
+          },
+          "payment_methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AffiliatedProduct": {
+        "type": "object",
+        "description": "Um produto que o projeto da chave promove. Traz a vitrine e a sua participação — nunca compradores, pedidos ou transações do produtor.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "image_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "content_format": {
+            "type": "string",
+            "nullable": true
+          },
+          "niche": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "producer_name": {
+            "type": "string"
+          },
+          "affiliation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "affiliation_status": {
+            "type": "string",
+            "enum": [
+              "requested",
+              "active",
+              "blocked",
+              "left"
+            ]
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Percentual da comissão sobre o líquido da venda. Inteiro de 1 a 95."
+          },
+          "code": {
+            "type": "string",
+            "description": "Seu código de divulgação. Vai no link do checkout como `?aff=`."
+          },
+          "affiliate_project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AffiliatedOffer"
+            }
+          },
+          "coupons": {
+            "type": "array",
+            "description": "Cupons elegíveis deste produto para a sua afiliação. Afiliação pendente recebe lista vazia.",
+            "items": {
+              "$ref": "#/components/schemas/AffiliatedCoupon"
+            }
+          }
+        }
+      },
+      "Affiliation": {
+        "type": "object",
+        "description": "Um acordo de afiliação: quem promove, qual produto, por qual percentual e em que projeto recebe.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "program_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "producer_account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "producer_project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Projeto do produto — o CNPJ que vende."
+          },
+          "producer_name": {
+            "type": "string"
+          },
+          "affiliate_account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "affiliate_project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Projeto que RECEBE a comissão."
+          },
+          "affiliate_project_name": {
+            "type": "string"
+          },
+          "affiliate_email": {
+            "type": "string",
+            "format": "email",
+            "description": "Só aparece para o lado do produtor, que precisa saber quem pediu afiliação."
+          },
+          "affiliate_name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "Código de divulgação (`af_` + 8 caracteres). Vai no link como `?aff=`."
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Percentual da comissão sobre o líquido da venda. Inteiro de 1 a 95."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "requested",
+              "active",
+              "blocked",
+              "left"
+            ]
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approved_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "blocked_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "blocked_reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "offers": {
+            "type": "array",
+            "description": "Ofertas ativas que esta afiliação comissiona.",
+            "items": {
+              "$ref": "#/components/schemas/AffiliationOffer"
+            }
+          }
+        }
+      },
+      "AffiliationBlockInput": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo do bloqueio, para o seu registro."
+          }
+        }
+      },
+      "AffiliationJoinInput": {
+        "type": "object",
+        "description": "Corpo opcional. O destino da comissão é sempre o projeto da chave; enviar outro `project_id` é 400.",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Precisa ser o projeto da chave, quando enviado. Omitir é o caminho normal."
+          }
+        }
+      },
+      "AffiliationManagedOffer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "AffiliationOffer": {
+        "type": "object",
+        "properties": {
+          "public_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Em centavos."
+          }
+        }
+      },
+      "AffiliationOfferAccess": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "all",
+              "selected"
+            ]
+          },
+          "offer_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "As ofertas selecionadas, em `mode: selected`."
+          },
+          "offers": {
+            "type": "array",
+            "description": "Todas as ofertas do produto, para montar a seleção.",
+            "items": {
+              "$ref": "#/components/schemas/AffiliationManagedOffer"
+            }
+          }
+        }
+      },
+      "AffiliationOfferAccessInput": {
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "all",
+              "selected"
+            ]
+          },
+          "offer_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "A seleção COMPLETA em `mode: selected` — lista vazia é válida e significa que nenhuma oferta comissiona. Precisa vir vazia em `mode: all`."
+          }
+        }
+      },
+      "AffiliationPercentInput": {
+        "type": "object",
+        "required": [
+          "percent"
+        ],
+        "properties": {
+          "percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Percentual da comissão sobre o líquido da venda. Inteiro de 1 a 95."
           }
         }
       },
@@ -8923,6 +10824,20 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ProductAffiliations": {
+        "type": "object",
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/AffiliateProgram"
+          },
+          "affiliations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Affiliation"
+            }
           }
         }
       },
