@@ -80,6 +80,13 @@
         ]
       },
       {
+        "group": "Disputas",
+        "pages": [
+          "api/disputas/listar",
+          "api/disputas/detalhar"
+        ]
+      },
+      {
         "group": "Webhooks",
         "pages": [
           "webhooks/introducao",

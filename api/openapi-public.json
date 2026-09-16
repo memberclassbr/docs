@@ -2123,6 +2123,217 @@
         ]
       }
     },
+    "/api/public/v1/disputes": {
+      "get": {
+        "operationId": "listDisputes",
+        "summary": "Lista disputas",
+        "description": "Lista os chargebacks do projeto, do mais recente para o mais antigo. Pagine por limit e offset: enquanto `pagination.has_more` for true, use `pagination.next_offset` na chamada seguinte.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filtra pelo status da disputa.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Itens por página (default 20, máx 100).",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Dispute"
+                          }
+                        },
+                        "pagination": {
+                          "$ref": "#/components/schemas/Pagination"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — limit acima de 100, ou limit/offset não inteiros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão dispute:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "disputes"
+        ]
+      }
+    },
+    "/api/public/v1/disputes/{id}": {
+      "get": {
+        "operationId": "getDispute",
+        "summary": "Detalha uma disputa",
+        "description": "Detalha o chargeback, com a evidência automática e o que o produtor já anexou à defesa.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da disputa (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Dispute"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — limit acima de 100, ou limit/offset não inteiros.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão dispute:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a disputa não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "disputes"
+        ]
+      }
+    },
     "/api/public/v1/payments/{paymentID}/refunds": {
       "get": {
         "operationId": "listPaymentRefunds",
@@ -3153,6 +3364,96 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "Dispute": {
+        "type": "object",
+        "description": "Um chargeback aberto contra uma venda. Enquanto a disputa corre, o LÍQUIDO INTEIRO da venda fica travado — e o saldo pode ficar negativo (ADR 0020).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order_id": {
+            "type": "string",
+            "description": "Pedido contestado (`ON…`)."
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "customer_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor contestado, em CENTAVOS."
+          },
+          "fee_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taxa de chargeback cobrada pelo provedor."
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "`open`, `evidence_sent` e os desfechos."
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Prazo para responder. Sem prazo do provedor, são 7 dias da cobrança."
+          },
+          "auto_evidence": {
+            "$ref": "#/components/schemas/DisputeAutoEvidence"
+          },
+          "seller_notes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Texto que o produtor anexou à defesa."
+          },
+          "evidence_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Arquivos que o produtor anexou."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolved_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "DisputeAutoEvidence": {
+        "type": "object",
+        "description": "Evidência que a Yeon reúne sozinha a partir da cobrança original, para instruir a defesa do chargeback. Deriva do payload do provedor — que NÃO é devolvido cru.",
+        "properties": {
+          "transaction_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "ip_address": {
+            "type": "string",
+            "nullable": true,
+            "description": "IP de onde partiu a compra, quando o provedor o registrou."
+          },
+          "confirmation_email_sent": {
+            "type": "boolean"
           }
         }
       },
