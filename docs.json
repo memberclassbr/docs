@@ -46,6 +46,23 @@
         ]
       },
       {
+        "group": "Transações",
+        "pages": [
+          "api/transacoes/listar",
+          "api/transacoes/detalhar",
+          "api/transacoes/eventos",
+          "api/transacoes/exportar",
+          "api/transacoes/reembolsos"
+        ]
+      },
+      {
+        "group": "Indicadores",
+        "pages": [
+          "api/indicadores/resumo",
+          "api/indicadores/grafico"
+        ]
+      },
+      {
         "group": "Webhooks",
         "pages": [
           "webhooks/introducao",

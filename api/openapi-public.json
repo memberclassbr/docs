@@ -13,6 +13,631 @@
     }
   ],
   "paths": {
+    "/api/public/v1/billing/summary": {
+      "get": {
+        "operationId": "getBillingSummary",
+        "summary": "Indicadores do mês",
+        "description": "Os indicadores do mês já calculados pela Yeon: receita bruta e líquida, ticket médio, vendas, acessos, afiliados, co-produção e funil.",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Mês no formato AAAA-MM. Default: mês corrente.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BillingSummary"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão billing:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "indicators"
+        ]
+      }
+    },
+    "/api/public/v1/billing/summary/chart": {
+      "get": {
+        "operationId": "getBillingChart",
+        "summary": "Série diária de vendas",
+        "description": "Vendas por dia do mês selecionado, com o mês anterior alinhado por dia-do-mês para comparação.",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Mês no formato AAAA-MM. Default: mês corrente.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SalesChartPoint"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão billing:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "indicators"
+        ]
+      }
+    },
+    "/api/public/v1/billing/transactions": {
+      "get": {
+        "operationId": "listTransactions",
+        "summary": "Lista transações",
+        "description": "Lista as transações do projeto — uma linha por PRODUTO vendido (ADR 0039). Devolve um array simples; use limit e offset para paginar.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca livre por comprador, e-mail, id do pedido ou referência externa.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filtra pelo status da cobrança.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "payment_method",
+            "in": "query",
+            "description": "Método usado na cobrança.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "description": "Início do período (RFC3339 ou AAAA-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "description": "Fim do período (RFC3339 ou AAAA-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_value_cents",
+            "in": "query",
+            "description": "Valor mínimo em CENTAVOS.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "max_value_cents",
+            "in": "query",
+            "description": "Valor máximo em CENTAVOS.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "is_subscription",
+            "in": "query",
+            "description": "Só vendas de assinatura (true) ou só avulsas (false).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Itens por página (default 20, máx 100).",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Deslocamento para paginação.",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Transaction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão billing:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/public/v1/billing/transactions/export": {
+      "get": {
+        "operationId": "exportTransactions",
+        "summary": "Exporta transações em XLSX",
+        "description": "Exporta as transações filtradas como planilha. Aceita os mesmos filtros da listagem; a paginação é ignorada e o export é limitado a 50.000 linhas.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Busca livre por comprador, e-mail, id do pedido ou referência externa.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filtra pelo status da cobrança.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "payment_method",
+            "in": "query",
+            "description": "Método usado na cobrança.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "description": "Início do período (RFC3339 ou AAAA-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "description": "Fim do período (RFC3339 ou AAAA-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_value_cents",
+            "in": "query",
+            "description": "Valor mínimo em CENTAVOS.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "max_value_cents",
+            "in": "query",
+            "description": "Valor máximo em CENTAVOS.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "is_subscription",
+            "in": "query",
+            "description": "Só vendas de assinatura (true) ou só avulsas (false).",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Planilha XLSX.",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão billing:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/public/v1/billing/transactions/{orderID}": {
+      "get": {
+        "operationId": "getTransaction",
+        "summary": "Detalha uma venda",
+        "description": "Detalha a venda: pedido, comprador, taxas e comissões, linhas, tentativas de cobrança e vendas derivadas do funil.",
+        "parameters": [
+          {
+            "name": "orderID",
+            "in": "path",
+            "required": true,
+            "description": "Id do pedido (`ON…`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TransactionDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão billing:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o pedido não existe ou não pertence ao projeto da chave. As duas respostas são idênticas de propósito: distingui-las permitiria sondar ids alheios.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/public/v1/billing/transactions/{orderID}/events": {
+      "get": {
+        "operationId": "listTransactionEvents",
+        "summary": "Histórico de eventos da venda",
+        "description": "Lista as entregas de webhook disparadas por esta venda, com o corpo enviado e a resposta recebida. Até 200 entregas, da mais recente para a mais antiga.",
+        "parameters": [
+          {
+            "name": "orderID",
+            "in": "path",
+            "required": true,
+            "description": "Id do pedido (`ON…`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EventDelivery"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão billing:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o pedido não existe ou não pertence ao projeto da chave. As duas respostas são idênticas de propósito: distingui-las permitiria sondar ids alheios.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
     "/api/public/v1/catalog/coupons": {
       "get": {
         "operationId": "listCoupons",
@@ -949,6 +1574,95 @@
         ]
       }
     },
+    "/api/public/v1/payments/{paymentID}/refunds": {
+      "get": {
+        "operationId": "listPaymentRefunds",
+        "summary": "Lista os reembolsos de uma cobrança",
+        "description": "Lista os reembolsos registrados sobre uma cobrança, com o andamento de cada um.",
+        "parameters": [
+          {
+            "name": "paymentID",
+            "in": "path",
+            "required": true,
+            "description": "Id da cobrança.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Refund"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão billing:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a cobrança não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "refunds"
+        ]
+      }
+    },
     "/api/public/v1/products": {
       "get": {
         "operationId": "listProducts",
@@ -1060,6 +1774,110 @@
   },
   "components": {
     "schemas": {
+      "BillingSummary": {
+        "type": "object",
+        "description": "Os indicadores do mês, já calculados pela Yeon. net_revenue é o que FICOU com este projeto: numa venda co-produzida, `valor − taxa` não é o líquido do produtor, porque a fatia do co-produtor sai na mesma transação (ADR 0022).",
+        "properties": {
+          "gross_revenue": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "net_revenue": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "avg_ticket": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "sales_count": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "accesses": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "affiliate_paid": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "affiliate_received": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "affiliate_accesses": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "affiliate_conversions": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "coproduction_paid": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "coproduction_received": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "coproduction_sales": {
+            "$ref": "#/components/schemas/SummaryMetric"
+          },
+          "funnel": {
+            "type": "object",
+            "properties": {
+              "views": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "accepts": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "declines": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "approved": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "revenue_cents": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          },
+          "experiments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "product_name": {
+                  "type": "string"
+                },
+                "variant": {
+                  "type": "string"
+                },
+                "layout": {
+                  "type": "string"
+                },
+                "views": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "sessions": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "approved": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "conversion": {
+                  "type": "number",
+                  "format": "double"
+                }
+              }
+            }
+          }
+        }
+      },
       "CatalogOffer": {
         "type": "object",
         "description": "Oferta é a unidade de venda: preço, moeda, parcelamento, cadência e meios de pagamento (ADR 0008). Valores em CENTAVOS.",
@@ -1384,6 +2202,65 @@
           },
           "error": {
             "type": "string"
+          }
+        }
+      },
+      "EventDelivery": {
+        "type": "object",
+        "description": "Uma tentativa de entrega de webhook do produtor para esta venda.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "webhook_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "webhook_url": {
+            "type": "string"
+          },
+          "integration": {
+            "type": "string",
+            "enum": [
+              "webhook",
+              "member_area"
+            ]
+          },
+          "outbox_event_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "string",
+            "description": "Corpo JSON enviado, como texto."
+          },
+          "response_status": {
+            "type": "integer"
+          },
+          "response_body": {
+            "type": "string"
+          },
+          "response_time_ms": {
+            "type": "integer"
+          },
+          "attempt": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "next_retry_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -1714,6 +2591,617 @@
         "type": "object",
         "description": "Tema do checkout do produto, em JSONB livre. Faz merge raso sobre o tema do projeto (ADR 0009). 404 quando o produto não tem tema próprio e herda o do projeto.",
         "additionalProperties": true
+      },
+      "Refund": {
+        "type": "object",
+        "description": "Um reembolso registrado sobre uma cobrança.",
+        "properties": {
+          "refund_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payment_id": {
+            "type": "string"
+          },
+          "gateway_refund_ref": {
+            "type": "string",
+            "description": "Referência no provedor; ausente enquanto pendente."
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "payment_status": {
+            "type": "string"
+          },
+          "payment_refunded_total_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payment_amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SalesChartPoint": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "current": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "description": "null nos dias futuros do mês corrente."
+          },
+          "previous": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Mesmo dia do mês anterior."
+          }
+        }
+      },
+      "SummaryMetric": {
+        "type": "object",
+        "description": "Um número do mês com o comparativo do mês anterior.",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previous": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "change_percent": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "description": "Uma TRANSAÇÃO é a venda de UM produto: uma linha do pedido (ADR 0039). Um pedido com um order bump produz duas transações. O transaction_code é `ON…` na linha principal e `ON…-N` nas demais. Todos os valores em CENTAVOS.",
+        "properties": {
+          "transaction_code": {
+            "type": "string",
+            "description": "Código da transação: `ON…` na principal, `ON…-N` nas demais.",
+            "example": "ON1788696360SEEDPIX3P1"
+          },
+          "order_id": {
+            "type": "string",
+            "description": "Pedido a que a linha pertence."
+          },
+          "position": {
+            "type": "integer",
+            "description": "Posição da linha no pedido; 1 é a principal."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "principal",
+              "bump"
+            ]
+          },
+          "line_count": {
+            "type": "integer",
+            "description": "Quantas linhas o pedido tem."
+          },
+          "order_amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total do PEDIDO, somando todas as linhas."
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor desta linha."
+          },
+          "external_reference": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "offer_public_id": {
+            "type": "string"
+          },
+          "buyer_name": {
+            "type": "string"
+          },
+          "buyer_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "currency": {
+            "type": "string",
+            "example": "BRL"
+          },
+          "payment_method": {
+            "type": "string"
+          },
+          "payment_type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "installments": {
+            "type": "integer"
+          },
+          "is_subscription": {
+            "type": "boolean"
+          },
+          "subscription_cycle": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "paid_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "gateway_charge_id": {
+            "type": "string",
+            "description": "Referência da cobrança no provedor, para conciliar com o extrato dele. Vazia enquanto não houve cobrança."
+          },
+          "split_leg_count": {
+            "type": "integer",
+            "description": "Quantas cobranças formam a venda: 2 no pagamento dividido. É a contagem, não o método, que identifica um dividido."
+          },
+          "refunded_amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Quanto voltou ao comprador nesta venda, somando as cobranças."
+          }
+        }
+      },
+      "TransactionAddress": {
+        "type": "object",
+        "properties": {
+          "street_name": {
+            "type": "string"
+          },
+          "street_number": {
+            "type": "string"
+          },
+          "neighborhood": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "zip_code": {
+            "type": "string"
+          },
+          "complement": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionAffiliate": {
+        "type": "object",
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "percent": {
+            "type": "integer"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refunded_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "net_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "amount_cents − refunded_cents."
+          }
+        },
+        "description": "Comissão creditada ao afiliado na venda, preservada mesmo se a afiliação mudar depois (ADR 0042)."
+      },
+      "TransactionAttempt": {
+        "type": "object",
+        "description": "Uma TENTATIVA de cobrança do pedido. Recusadas também aparecem: é o histórico de auditoria da venda.",
+        "properties": {
+          "payment_id": {
+            "type": "string"
+          },
+          "gateway_charge_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_detail": {
+            "type": "string",
+            "description": "Código cru do provedor."
+          },
+          "payment_method": {
+            "type": "string"
+          },
+          "payment_type": {
+            "type": "string"
+          },
+          "installments": {
+            "type": "integer"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "paid_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "rejection": {
+            "type": "object",
+            "description": "Motivo da recusa já traduzido, quando houve.",
+            "additionalProperties": true
+          }
+        }
+      },
+      "TransactionBuyer": {
+        "type": "object",
+        "description": "Dados do comprador desta venda. Documento e endereço só vêm preenchidos quando o checkout os coletou — são o que a emissão de nota fiscal exige.",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "document": {
+            "type": "string",
+            "description": "CPF ou CNPJ do comprador."
+          },
+          "address": {
+            "$ref": "#/components/schemas/TransactionAddress"
+          }
+        }
+      },
+      "TransactionCoproducer": {
+        "type": "object",
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "percent": {
+            "type": "integer"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refunded_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "net_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "amount_cents − refunded_cents."
+          }
+        },
+        "description": "Fatia creditada ao co-produtor NA VENDA — não um recálculo pelo acordo de hoje: mudar o percentual depois não reescreve história (ADR 0021)."
+      },
+      "TransactionCouponPricing": {
+        "type": "object",
+        "description": "Decomposição preço → desconto → final da oferta PRINCIPAL, histórica: sai do que foi carimbado na venda, nunca do preço de hoje (ADR 0053). Os adicionais entram pelo preço cheio.",
+        "properties": {
+          "known": {
+            "type": "boolean",
+            "description": "false significa 'houve cupom e não sabemos quanto abateu' — assinaturas anteriores ao carimbo. Não é o mesmo que desconto zero."
+          },
+          "coupon_code": {
+            "type": "string"
+          },
+          "original_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "discount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "final_cents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TransactionDerivedOrder": {
+        "type": "object",
+        "description": "Venda criada a partir desta pelo funil pós-compra. Cada aceite é uma venda NOVA (ADR 0045).",
+        "properties": {
+          "order_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Transaction"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "line": {
+                "$ref": "#/components/schemas/TransactionItem"
+              },
+              "seller_name": {
+                "type": "string"
+              },
+              "seller_document": {
+                "type": "string",
+                "description": "Documento do PRODUTOR."
+              },
+              "coupon_code": {
+                "type": "string"
+              },
+              "discount_cents": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "coupon_pricing": {
+                "$ref": "#/components/schemas/TransactionCouponPricing"
+              },
+              "buyer": {
+                "$ref": "#/components/schemas/TransactionBuyer"
+              },
+              "fees": {
+                "$ref": "#/components/schemas/TransactionFees"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TransactionItem"
+                }
+              },
+              "attempts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TransactionAttempt"
+                }
+              },
+              "subscription": {
+                "$ref": "#/components/schemas/TransactionSubscription"
+              },
+              "coproducers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TransactionCoproducer"
+                }
+              },
+              "affiliates": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TransactionAffiliate"
+                }
+              },
+              "parent_order_id": {
+                "type": "string",
+                "description": "Preenchido quando esta venda nasceu de um funil."
+              },
+              "derived_orders": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TransactionDerivedOrder"
+                }
+              }
+            }
+          }
+        ],
+        "description": "A venda inteira: a linha consultada, o pedido, o comprador, as taxas, as tentativas e os beneficiários."
+      },
+      "TransactionFees": {
+        "type": "object",
+        "description": "Taxas e comissões da venda. As taxas REAIS que o provedor cobrou não são expostas — são internas da Yeon. net_received_cents já desconta as fatias de afiliado e co-produção: é o que fica com este projeto.",
+        "properties": {
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "base_amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Preço sem os juros de parcelamento."
+          },
+          "application_fee_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Taxa da Yeon (percentual + fixa)."
+          },
+          "fee_percent_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "fee_fixed_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interest_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Juros de parcelamento."
+          },
+          "installment_fee_seller_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Parte dos juros que o produtor absorveu."
+          },
+          "net_received_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O que ficou com este projeto."
+          },
+          "refunded_amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "coproduction_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Creditado aos co-produtores, já descontado do líquido."
+          },
+          "affiliate_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Comissão de afiliado, líquida de estornos."
+          }
+        }
+      },
+      "TransactionItem": {
+        "type": "object",
+        "description": "Uma linha do pedido. fee_cents e net_cents são RATEIO de exibição: o ledger continua por cobrança (ADR 0039).",
+        "properties": {
+          "transaction_code": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "principal",
+              "bump"
+            ]
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "offer_public_id": {
+            "type": "string"
+          },
+          "subscription_id": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "refunded_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "fee_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "net_cents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TransactionSubscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "current_cycle": {
+            "type": "integer"
+          },
+          "interval_days": {
+            "type": "integer"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "next_charge_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "last_charge_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
       }
     },
     "securitySchemes": {
