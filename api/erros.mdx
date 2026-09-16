@@ -1,0 +1,119 @@
+---
+title: "Erros"
+description: "Como ler uma resposta de erro e decidir entre corrigir e repetir"
+---
+
+Toda resposta de erro tem a mesma forma:
+
+```json
+{
+  "success": false,
+  "error": "O campo reason precisa ser um destes: requested_by_seller, duplicate, fraud, other.",
+  "error_code": "INVALID_REFUND_REASON"
+}
+```
+
+<ParamField path="error_code" type="string">
+  O identificador **estável**. É nele que o seu código decide o que fazer — ele não muda, enquanto `error` é texto para pessoas e pode ser reescrito a qualquer momento.
+</ParamField>
+
+<ParamField path="error" type="string">
+  A explicação em português. Serve para o log e para a tela de quem opera a integração.
+</ParamField>
+
+## A pergunta que importa: corrigir ou repetir?
+
+O status responde antes do código.
+
+| Status | Significa | O que fazer |
+| --- | --- | --- |
+| `400` | O corpo ou a query estão errados | **Corrija e reenvie.** Repetir igual nunca vai passar |
+| `401` | Token ausente, inválido ou revogado | Verifique o header; gere outra chave se foi revogada |
+| `403` | A chave não tem a permissão, ou a conta não cumpriu um pré-requisito | **Não repita.** Ajuste a permissão no Painel, ou resolva o pré-requisito (KYC, por exemplo) |
+| `404` | O recurso não existe, não é seu, ou é de outro projeto | Confira o id. Repetir não muda nada |
+| `409` | Conflito com o estado atual | Depende do código — veja abaixo |
+| `422` | A operação foi entendida, mas não pôde ser concluída | Em geral há uma condição de negócio a resolver antes |
+| `429` | Teto de requisições da chave | Espere o que o `Retry-After` disser e repita |
+| `5xx` | Falha nossa | Repita com a **mesma** `Idempotency-Key` |
+
+<Warning>
+  `404` também é a resposta para "existe, mas não é do projeto desta chave". É deliberado: uma resposta diferente confirmaria a existência de um recurso que não é seu.
+</Warning>
+
+## Autenticação e permissão
+
+| `error_code` | Status | O que aconteceu |
+| --- | --- | --- |
+| `API_TOKEN_MISSING` | 401 | Faltou o header `Authorization: Bearer <token>` |
+| `API_TOKEN_INVALID` | 401 | Token desconhecido ou revogado |
+| `API_TOKEN_SCOPE_MISSING` | 403 | A chave existe, mas não carrega a permissão desta operação |
+| `API_TOKEN_RATE_LIMITED` | 429 | Teto por minuto da chave. Veja `Retry-After` |
+| `ROUTE_NOT_FOUND` | 404 | Este método e caminho não existem na API pública |
+
+`API_TOKEN_SCOPE_MISSING` **não se resolve repetindo**: as permissões de uma chave são escolhidas na criação e não mudam depois. Gere outra chave com o que falta e troque na integração.
+
+## Idempotência
+
+| `error_code` | Status | O que aconteceu |
+| --- | --- | --- |
+| `IDEMPOTENCY_KEY_REQUIRED` | 400 | A operação exige o header e ele não veio |
+| `IDEMPOTENCY_KEY_INVALID` | 400 | A chave passa de 255 caracteres |
+| `IDEMPOTENCY_KEY_REUSED` | 409 | A mesma chave já foi usada para **outra** requisição |
+| `IDEMPOTENCY_IN_PROGRESS` | 409 | A primeira tentativa ainda está rodando |
+| `IDEMPOTENCY_RETRY` | 409 | A reserva expirou entre o registro e a leitura — reenvie a mesma requisição |
+
+`IDEMPOTENCY_IN_PROGRESS` é o único 409 desta lista que pede espera: aguarde e **consulte o resultado** antes de tentar de novo. Detalhes em [Idempotência](/api/idempotencia).
+
+## Dinheiro
+
+| `error_code` | Status | O que aconteceu |
+| --- | --- | --- |
+| `INVALID_REFUND_REASON` | 400 | `reason` fora dos quatro valores aceitos |
+| `INVALID_REFUND_AMOUNT` | 400 | `amount_cents` negativo |
+| `REFUND_AMOUNT_EXCEEDS_RESIDUAL` | 422 | O valor passa do que ainda resta para devolver |
+| `PAYMENT_NOT_REFUNDABLE` | 409 | A cobrança não está num estado que aceite devolução |
+| `REFUND_GATEWAY_FAILED` | 502 | O gateway recusou. **Não repita cegamente** — consulte os reembolsos da cobrança antes |
+| `ORDER_REFUND_FAILED` | 422 | Nenhuma cobrança do pedido voltou |
+| `WITHDRAWAL_PAYMENT_NOT_AVAILABLE` | 422 | Uma das transações escolhidas não está disponível para saque |
+| `KYC_REQUIRED` | 409 | O projeto precisa de KYC aprovado para sacar |
+| `CPF_PAYOUT_LIMIT` | 422 | O teto mensal de saque do CPF não comporta o valor |
+
+<Note>
+  Numa devolução PARCIAL de um pedido a resposta é `207` com `success: true`: parte voltou e parte não. Leia `legs[]` — cada cobrança traz o próprio `status`, e a que falhou traz `error`. Tratar 207 como sucesso silencioso deixa o comprador sem parte do dinheiro.
+</Note>
+
+## Fronteira do projeto
+
+| `error_code` | Status | O que aconteceu |
+| --- | --- | --- |
+| `DESTINATION_PROJECT_MISMATCH` | 400 | Você enviou um `project_id` que não é o da chave. Omita-o |
+| `GRANT_ABOVE_OWN_LEVEL` | 403 | A chave tentou conceder a um membro um nível que ela própria não tem |
+
+Ambos existem pela mesma razão: uma chave pertence a **um** projeto, e não empresta nem amplia a própria autoridade.
+
+## Pré-requisitos da conta
+
+| `error_code` | Status | O que aconteceu |
+| --- | --- | --- |
+| `KYC_NOT_SUBMITTED` | 403 | Envie o KYC da conta antes de convidar membros |
+| `KYC_NOT_APPROVED` | 403 | O projeto que vai receber dinheiro precisa de KYC aprovado |
+| `AFFILIATE_PROJECT_NOT_OWNED` / `COPROD_PROJECT_NOT_OWNED` | 403 | O projeto de destino não é de uma conta sua |
+
+Nenhum deles se resolve por API: são ações do Painel.
+
+## Estado do acordo
+
+| `error_code` | Status | O que aconteceu |
+| --- | --- | --- |
+| `AFFILIATE_PROGRAM_NOT_FOUND` | 404 | Não existe programa com esse código |
+| `AFFILIATE_PROGRAM_PAUSED` | 409 | O programa existe mas não aceita adesões agora |
+| `AFFILIATE_ALREADY_JOINED` | 409 | Você já pediu afiliação a este produto |
+| `AFFILIATE_COPRODUCER` / `COPROD_ALREADY_AFFILIATE` | 400/409 | A mesma conta não pode ser afiliada **e** co-produtora do mesmo produto |
+| `COPROD_PERCENT_EXCEEDS_CAP` | 409 | A soma das fatias ativas passaria de 95% |
+| `COPROD_INVITE_INVALID` | 404 | Convite inexistente, expirado, já respondido, ou de outro e-mail |
+| `MEMBER_IS_OWNER` | 409 | O e-mail é o dono da conta, que já tem acesso total |
+| `WEBHOOK_URL_ALREADY_EXISTS` | 409 | Já existe um webhook com essa URL neste projeto |
+
+## Uma regra para o seu retry
+
+Automatize o retry apenas para `429` e `5xx`, sempre com a **mesma** `Idempotency-Key` e com espera crescente. Todo `4xx` é uma decisão: alguém precisa corrigir alguma coisa, e repetir só gasta a sua cota.

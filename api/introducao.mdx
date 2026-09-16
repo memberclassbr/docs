@@ -47,14 +47,17 @@ Toda resposta segue o mesmo envelope:
 }
 ```
 
-Em caso de erro, `success` é `false` e `error` descreve o problema:
+Em caso de erro, `success` é `false`, `error` descreve o problema e `error_code` é o identificador estável em que o seu código decide:
 
 ```json
 {
   "success": false,
-  "error": "invalid token"
+  "error": "O campo reason precisa ser um destes: requested_by_seller, duplicate, fraud, other.",
+  "error_code": "INVALID_REFUND_REASON"
 }
 ```
+
+Veja [Erros](/api/erros) para a lista dos códigos e, principalmente, para saber quando repetir e quando corrigir.
 
 ## Paginação
 
@@ -111,6 +114,14 @@ Quatro palavras que não são sinônimos:
 
 <Card title="Permissões da chave" icon="key" href="/api/permissoes">
   O que cada token pode fazer, e por que isso se decide na criação.
+</Card>
+
+<Card title="Fluxos completos" icon="route" href="/api/fluxos">
+  Quatro cenários de ponta a ponta: publicar e vender, conciliar, devolver dinheiro e recrutar afiliados.
+</Card>
+
+<Card title="Erros" icon="triangle-exclamation" href="/api/erros">
+  O contrato de erro, e a única pergunta que importa: corrigir ou repetir?
 </Card>
 
 <Card title="Lista produtos" icon="box" href="/api/listar-produtos">

@@ -21,7 +21,9 @@
         "pages": [
           "api/introducao",
           "api/permissoes",
-          "api/idempotencia"
+          "api/idempotencia",
+          "api/erros",
+          "api/fluxos"
         ]
       },
       {

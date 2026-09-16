@@ -842,7 +842,7 @@
             }
           },
           "400": {
-            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "description": "Bad Request — `INVALID_REFUND_REASON`: o campo `reason` precisa ser um de `requested_by_seller`, `duplicate`, `fraud`, `other`. `INVALID_REFUND_AMOUNT`: `amount_cents` não pode ser negativo. `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.\n\nEstes são erros do CORPO: repetir a mesma requisição não muda o resultado — corrija e reenvie. Falha da DEVOLUÇÃO em si é `422 ORDER_REFUND_FAILED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4805,7 +4805,7 @@
             }
           },
           "400": {
-            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "description": "Bad Request — `INVALID_REFUND_REASON`: o campo `reason` precisa ser um de `requested_by_seller`, `duplicate`, `fraud`, `other`. `INVALID_REFUND_AMOUNT`: `amount_cents` não pode ser negativo. `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.\n\nEstes são erros do CORPO: repetir a mesma requisição não muda o resultado — corrija e reenvie. Falha da DEVOLUÇÃO em si é `422 ORDER_REFUND_FAILED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9659,7 +9659,7 @@
             }
           },
           "400": {
-            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "description": "Bad Request — `INVALID_REFUND_REASON`: o campo `reason` precisa ser um de `requested_by_seller`, `duplicate`, `fraud`, `other`. `INVALID_REFUND_AMOUNT`: `amount_cents` não pode ser negativo. `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.\n\nEstes são erros do CORPO: repetir a mesma requisição não muda o resultado — corrija e reenvie. Falha da DEVOLUÇÃO em si é `422 ORDER_REFUND_FAILED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10244,7 +10244,7 @@
         "properties": {
           "reason": {
             "type": "string",
-            "description": "Motivo do bloqueio, para o seu registro."
+            "description": "Motivo do bloqueio, para o seu registro. Texto livre."
           }
         }
       },
@@ -11499,7 +11499,8 @@
             "description": "Taxa de chargeback cobrada pelo provedor."
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "description": "Motivo da disputa, como o gateway o informou."
           },
           "status": {
             "type": "string",
@@ -12721,7 +12722,14 @@
             "description": "Valor a devolver, em CENTAVOS. 0 ou ausente = tudo o que resta."
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "requested_by_seller",
+              "duplicate",
+              "fraud",
+              "other"
+            ],
+            "description": "Motivo da devolução, gravado no reembolso. Opcional — omitir é válido. Só estes quatro valores são aceitos; qualquer outro é 400 `INVALID_REFUND_REASON`."
           },
           "seller_notes": {
             "type": "string",
