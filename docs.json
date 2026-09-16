@@ -100,7 +100,12 @@
         "group": "Assinaturas",
         "pages": [
           "api/assinaturas/listar",
-          "api/assinaturas/detalhar"
+          "api/assinaturas/detalhar",
+          "api/assinaturas/cancelar",
+          "api/assinaturas/reautorizar",
+          "api/assinaturas/cobrar-agora",
+          "api/assinaturas/reemitir-fatura",
+          "api/assinaturas/reembolsar-e-cancelar"
         ]
       },
       {

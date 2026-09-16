@@ -4833,6 +4833,675 @@
           "subscriptions"
         ]
       }
+    },
+    "/api/public/v1/subscriptions/{id}/cancel": {
+      "post": {
+        "operationId": "cancelSubscription",
+        "summary": "Cancela uma assinatura",
+        "description": "Cancela a assinatura. Com `cancel_at_period_end=true` ela segue ativa até o fim do ciclo pago e não é renovada; sem o parâmetro, o cancelamento é imediato.\n\nCancelar expira a fatura Pix em aberto: uma assinatura cancelada não volta a viver por um QR antigo.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da assinatura (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cancel_at_period_end",
+            "in": "query",
+            "description": "true agenda o cancelamento para o fim do ciclo pago.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem subscription:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a assinatura não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable — a assinatura não está no estado que a operação exige.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/api/public/v1/subscriptions/{id}/charge-now": {
+      "post": {
+        "operationId": "chargeSubscriptionNow",
+        "summary": "Cobra manualmente",
+        "description": "Dispara a cobrança manual ÚNICA permitida depois que as tentativas automáticas se esgotaram. Disponível só quando `manual_charge_available` é true; usada uma vez, não volta.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da assinatura (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Subscription"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem subscription:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a assinatura não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — a cobrança manual já foi usada nesta assinatura. Conflict — `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable — a assinatura não está no estado que a operação exige.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/api/public/v1/subscriptions/{id}/invoice": {
+      "post": {
+        "operationId": "reissueSubscriptionInvoice",
+        "summary": "Reemite a fatura Pix do ciclo",
+        "description": "Reemite (ou devolve) a cobrança Pix do ciclo aberto. Só existe em `charge_mode: manual_pix`.\n\nA fatura anterior é cancelada ANTES de a nova ser emitida: há no máximo uma fatura viva por ciclo, e o lembrete de atraso sai com o código novo (ADR 0026).",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da assinatura (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionPixInvoice"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem subscription:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a assinatura não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — a assinatura não está em `manual_pix`, ou não há ciclo aberto. Conflict — `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable — a assinatura não está no estado que a operação exige.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/api/public/v1/subscriptions/{id}/reauthorize": {
+      "post": {
+        "operationId": "reauthorizeSubscription",
+        "summary": "Reautoriza a cobrança",
+        "description": "Reautoriza a cobrança da assinatura — o caminho para trocar o meio de pagamento depois de recusas.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da assinatura (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReauthorizeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Subscription"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem subscription:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a assinatura não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable — a assinatura não está no estado que a operação exige.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/api/public/v1/subscriptions/{id}/refund-and-cancel": {
+      "post": {
+        "operationId": "refundAndCancelSubscription",
+        "summary": "Reembolsa a última cobrança e cancela",
+        "description": "Devolve a ÚLTIMA cobrança da assinatura e, se o reembolso der certo, cancela. Se o reembolso falhar, a assinatura NÃO é cancelada — a ordem existe para não deixar o comprador sem o serviço e sem o dinheiro.\n\nAssinatura sem cobrança registrada é apenas cancelada.\n\nExige DUAS permissões: `subscription:write` **e** `billing:refund`. São duas ações de classes diferentes, e quem tem só uma delas não deveria conseguir fazer as duas de uma vez.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da assinatura (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "refund": {
+                          "type": "object",
+                          "description": "O resultado do reembolso; ausente quando não havia cobrança a devolver.",
+                          "additionalProperties": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem **subscription:write e billing:refund** — as duas (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a assinatura não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable — a assinatura não está no estado que a operação exige.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "subscriptions"
+        ]
+      }
     }
   },
   "components": {
@@ -6527,6 +7196,11 @@
             ]
           }
         }
+      },
+      "ReauthorizeRequest": {
+        "type": "object",
+        "description": "Dados para reautorizar a cobrança da assinatura (por exemplo, um cartão novo tokenizado).",
+        "additionalProperties": true
       },
       "Refund": {
         "type": "object",
