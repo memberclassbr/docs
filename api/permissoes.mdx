@@ -1,0 +1,71 @@
+---
+title: "Permissões da chave"
+description: "O que cada token de API pode fazer, e por que isso é escolhido na criação"
+---
+
+Cada token carrega **permissões**, escolhidas quando você o gera no Painel. Uma operação só responde se a chave carregar a permissão que ela exige — caso contrário, a resposta é `403` com `error_code` `API_TOKEN_SCOPE_MISSING`.
+
+Uma chave também pertence a **um único projeto**. Ela nunca alcança outro projeto, nem mesmo outro projeto da sua própria conta.
+
+## Formato
+
+Uma permissão é escrita como `<módulo>:<ação>`:
+
+```text
+catalog:read
+billing:refund
+```
+
+<ParamField path="módulo" type="string">
+  A área do sistema: `catalog`, `billing`, `customer`, `subscription`, `dispute`, `ledger`, `webhook`, `affiliate`, `coproduction`, `members`.
+</ParamField>
+
+<ParamField path="ação" type="string">
+  O que pode ser feito: `read`, `write`, ou uma ação sensível — `refund`, `withdraw`, `manage`.
+</ParamField>
+
+## Como as permissões se contêm
+
+`write` inclui `read` do mesmo módulo. Uma chave com `catalog:write` também lê o catálogo.
+
+As ações sensíveis **não** vêm junto com a escrita. Elas são concedidas uma a uma:
+
+| Ação | O que faz | Nunca vem de |
+| --- | --- | --- |
+| `billing:refund` | Devolve dinheiro ao comprador | `billing:write` |
+| `ledger:withdraw` | Solicita saque do saldo disponível | `ledger:read` |
+| `members:manage` | Convida, altera permissões e remove acesso ao projeto | qualquer outra |
+
+Quem recebeu escrita de catálogo não recebeu o direito de devolver dinheiro junto.
+
+## Vitrine e gestão são permissões diferentes
+
+<ParamField path="catalog:storefront" type="permissão">
+  Lê a **vitrine**: `GET /api/public/v1/products`, que traz só produtos ativos com oferta ativa, como o comprador vê.
+</ParamField>
+
+<ParamField path="catalog:read" type="permissão">
+  Lê a **gestão**: `GET /api/public/v1/catalog/products` e as demais consultas do catálogo, que enxergam rascunho, inativo e o detalhe de cada oferta.
+</ParamField>
+
+`catalog:read` contém a vitrine. O contrário não é verdade: uma chave de vitrine não enxerga produto inativo.
+
+## Chaves criadas antes das permissões
+
+Se você gerou um token antes de as permissões existirem, ele continua funcionando e mantém **exatamente** o acesso que tinha: a listagem de produtos da vitrine. Ele não ganhou nada.
+
+Para dar mais acesso a essa integração, gere um novo token com as permissões que ela precisa e revogue o antigo.
+
+## Trocar as permissões de uma chave
+
+Não é possível editar as permissões de um token já criado. Gere outro com as permissões corretas, troque na sua integração e revogue o antigo.
+
+<Note>
+  É deliberado. Uma chave que muda de poder sem a integração saber é uma chave cujo incidente ninguém consegue reconstruir depois.
+</Note>
+
+## Limites de requisição
+
+Os limites são **por chave**, não por endereço IP, com contadores separados para leitura e escrita — um laço de leitura não consome a cota de que você precisa para concluir um reembolso.
+
+Ao exceder, a resposta é `429` com `error_code` `API_TOKEN_RATE_LIMITED` e o cabeçalho `Retry-After` diz em quantos segundos tentar de novo.

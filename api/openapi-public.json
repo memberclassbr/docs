@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "contact": {},
-    "description": "API pública do Yeon para sellers. Autentique cada requisição com um token de API no header Authorization no formato \"Bearer <token>\". O token é gerado no dashboard e escopado a um único projeto.",
+    "description": "API pública do Yeon para sellers. Autentique cada requisição com um token de API no header Authorization no formato \"Bearer <token>\". O token é gerado no dashboard, escopado a um único projeto e carrega PERMISSÕES escolhidas na criação: cada operação exige uma permissão específica, e leitura, escrita e ações sensíveis (reembolso, saque, gestão de membros) são concedidas separadamente. Chaves criadas antes das permissões continuam válidas e mantêm exatamente o acesso que tinham: a listagem pública de produtos.",
     "title": "Yeon Public API",
     "version": "1.0"
   },
@@ -13,10 +13,946 @@
     }
   ],
   "paths": {
+    "/api/public/v1/catalog/coupons": {
+      "get": {
+        "operationId": "listCoupons",
+        "summary": "Lista cupons",
+        "description": "Lista os cupons do projeto da chave.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Coupon"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "coupons"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/coupons/options": {
+      "get": {
+        "operationId": "listCouponOptions",
+        "summary": "Lista os alvos selecionáveis de um cupom",
+        "description": "Lista produtos, ofertas e contas afiliadas do projeto que podem ser escolhidos ao restringir a abrangência de um cupom.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CouponSelectionOption"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "coupons"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/coupons/{id}": {
+      "get": {
+        "operationId": "getCoupon",
+        "summary": "Detalha um cupom",
+        "description": "Detalha um cupom do projeto da chave.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do cupom (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Coupon"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o cupom não existe, não pertence ao projeto da chave, ou pertence a outro projeto da mesma conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "coupons"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/products": {
+      "get": {
+        "operationId": "listCatalogProducts",
+        "summary": "Lista produtos (gestão)",
+        "description": "Lista os produtos do projeto da chave, INCLUINDO rascunho e inativo — é a visão de gestão. Para a vitrine (só ativos com oferta ativa, com link de checkout pronto), use GET /api/public/v1/products, cujo contrato é estável e independente deste.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filtra por status.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "active",
+                "inactive"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filtra por tipo de oferta do produto.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "one_time",
+                "recurring"
+              ]
+            }
+          },
+          {
+            "name": "content_format",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "niche",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CatalogProduct"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/products/export": {
+      "get": {
+        "operationId": "exportCatalogProducts",
+        "summary": "Exporta o catálogo em XLSX",
+        "description": "Exporta produtos e ofertas do projeto da chave como planilha XLSX — o mesmo arquivo que a importação aceita de volta (ADR 0060).",
+        "responses": {
+          "200": {
+            "description": "Planilha XLSX.",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/products/{id}": {
+      "get": {
+        "operationId": "getCatalogProduct",
+        "summary": "Detalha um produto",
+        "description": "Detalha um produto do projeto da chave.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CatalogProduct"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não existe, não pertence ao projeto da chave, ou pertence a outro projeto da mesma conta. As três respostas são idênticas de propósito: distingui-las permitiria sondar ids de outros projetos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/products/{id}/bumps": {
+      "get": {
+        "operationId": "listProductOrderBumps",
+        "summary": "Lista os order bumps de um produto",
+        "description": "Lista o bloco de order bumps exibido no checkout do produto.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/OrderBumps"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não existe, não pertence ao projeto da chave, ou pertence a outro projeto da mesma conta. As três respostas são idênticas de propósito: distingui-las permitiria sondar ids de outros projetos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/products/{id}/experiment": {
+      "get": {
+        "operationId": "getProductExperiment",
+        "summary": "Resultado do teste A/B do checkout",
+        "description": "Resultado do teste A/B de layout do checkout do produto. Sem from/to, a janela é dos últimos 30 dias.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Início da janela (AAAA-MM-DD).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Fim da janela (AAAA-MM-DD).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ExperimentReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não existe, não pertence ao projeto da chave, ou pertence a outro projeto da mesma conta. As três respostas são idênticas de propósito: distingui-las permitiria sondar ids de outros projetos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/products/{id}/funnel": {
+      "get": {
+        "operationId": "listProductFunnelSteps",
+        "summary": "Lista as etapas do funil pós-compra",
+        "description": "Lista as etapas de upsell/downsell exibidas depois da compra, com os contadores da janela completa.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FunnelStep"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não existe, não pertence ao projeto da chave, ou pertence a outro projeto da mesma conta. As três respostas são idênticas de propósito: distingui-las permitiria sondar ids de outros projetos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/products/{id}/offers": {
+      "get": {
+        "operationId": "listProductOffers",
+        "summary": "Lista as ofertas de um produto",
+        "description": "Lista TODAS as ofertas do produto, inclusive inativas. A oferta é a unidade de venda: é dela que saem preço, moeda, parcelamento, cadência e meios de pagamento (ADR 0008). O link de checkout é montado a partir de public_id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CatalogOffer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não existe, não pertence ao projeto da chave, ou pertence a outro projeto da mesma conta. As três respostas são idênticas de propósito: distingui-las permitiria sondar ids de outros projetos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/public/v1/catalog/products/{id}/theme": {
+      "get": {
+        "operationId": "getProductTheme",
+        "summary": "Consulta o tema do checkout do produto",
+        "description": "Devolve o tema PRÓPRIO do produto. Responde 404 quando o produto não tem tema próprio e herda o do projeto — o que não é erro, é a resposta de que não há nada sobrescrito.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProductTheme"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão catalog:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não tem tema próprio (herda o do projeto), ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — a chave excedeu o teto de leituras por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/public/v1/products": {
       "get": {
         "operationId": "listProducts",
-        "description": "Lista os produtos do projeto associado ao token de API (Bearer), paginado. Expõe apenas produtos ativos com pelo menos uma oferta ativa. Por padrão retorna só a identidade do produto; com include=offers cada produto embute suas ofertas ativas (offers[]) com link de checkout pronto para uso. Rate-limit: 1 requisição por segundo por IP.",
+        "description": "Lista os produtos do projeto associado ao token de API (Bearer), paginado. Expõe apenas produtos ativos com pelo menos uma oferta ativa. Por padrão retorna só a identidade do produto; com include=offers cada produto embute suas ofertas ativas (offers[]) com link de checkout pronto para uso. Rate-limit: por credencial, no balde de leitura.",
         "parameters": [
           {
             "description": "Itens por página (default 20, máx 100)",
@@ -89,8 +1025,18 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden — a chave não tem permissão para esta operação (error_code API_TOKEN_SCOPE_MISSING). Esta rota exige catalog:storefront ou catalog:read. As permissões são escolhidas na criação da chave, no Painel, e não mudam depois: para alterá-las, gere outra chave e revogue a atual.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "429": {
-            "description": "Too Many Requests — excedeu 1 requisição por segundo",
+            "description": "Too Many Requests — a chave excedeu o teto de requisições por minuto (error_code API_TOKEN_RATE_LIMITED). O limite é por CREDENCIAL, com baldes separados para leitura e escrita, e o cabeçalho Retry-After diz em quantos segundos tentar de novo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -114,13 +1060,150 @@
   },
   "components": {
     "schemas": {
-      "Product": {
+      "CatalogOffer": {
         "type": "object",
-        "description": "Identidade do produto (nome, descrição, imagem, status). Tudo que define como o comprador paga — preço, moeda, parcelamento, recorrência — vive exclusivamente nas ofertas.",
+        "description": "Oferta é a unidade de venda: preço, moeda, parcelamento, cadência e meios de pagamento (ADR 0008). Valores em CENTAVOS.",
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "one_time",
+              "recurring"
+            ]
+          },
+          "price_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Preço em centavos."
+          },
+          "currency": {
+            "type": "string",
+            "example": "BRL"
+          },
+          "max_installments": {
+            "type": "integer"
+          },
+          "free_installments": {
+            "type": "integer",
+            "description": "Parcelas sem juros."
+          },
+          "recurring_interval": {
+            "type": "string",
+            "description": "DEPRECATED — use interval + interval_count."
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week",
+              "month",
+              "year"
+            ],
+            "nullable": true
+          },
+          "interval_count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "anchor_day_of_month": {
+            "type": "integer",
+            "nullable": true
+          },
+          "anchor_day_of_week": {
+            "type": "integer",
+            "nullable": true
+          },
+          "anchor_month_of_year": {
+            "type": "integer",
+            "nullable": true
+          },
+          "statement_descriptor": {
+            "type": "string",
+            "nullable": true,
+            "description": "O que aparece na fatura do cartão."
+          },
+          "default_installments_mode": {
+            "type": "string",
+            "enum": [
+              "max",
+              "single"
+            ]
+          },
+          "trial_days": {
+            "type": "integer"
+          },
+          "max_cycles": {
+            "type": "integer",
+            "description": "0 = sem limite de ciclos."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ]
+          },
+          "position": {
+            "type": "integer"
+          },
+          "public_id": {
+            "type": "string",
+            "description": "Identificador público (of_ + 10 caracteres); é o que compõe o link de checkout.",
+            "example": "of_a1b2c3d4e5"
+          },
+          "max_sales": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Teto de vendas (soft-cap, ADR 0010)."
+          },
+          "sold_count": {
+            "type": "integer",
+            "description": "Vendas líquidas de aprovadas, contadas por PEDIDO (ADR 0010)."
+          },
+          "payment_methods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "credit_card",
+                "pix",
+                "boleto"
+              ]
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CatalogProduct": {
+        "type": "object",
+        "description": "Produto na visão de GESTÃO: inclui rascunho e inativo, que a vitrine (GET /api/public/v1/products) filtra. Preço, moeda, parcelamento e recorrência NÃO vivem aqui — são da oferta (ADR 0008).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Sempre o projeto da chave."
           },
           "name": {
             "type": "string"
@@ -131,17 +1214,31 @@
           "image_url": {
             "type": "string"
           },
+          "content_format": {
+            "type": "string"
+          },
+          "niche": {
+            "type": "string"
+          },
+          "redirect_url": {
+            "type": "string",
+            "description": "Para onde o comprador vai depois de pagar."
+          },
+          "webhook_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Webhooks do produtor escopados a este produto."
+          },
           "status": {
             "type": "string",
-            "description": "Status do produto; afeta todas as ofertas.",
-            "example": "active"
-          },
-          "offers": {
-            "type": "array",
-            "description": "Ofertas ativas do produto, ordenadas por posição. Presente apenas quando include=offers.",
-            "items": {
-              "$ref": "#/components/schemas/Offer"
-            }
+            "enum": [
+              "draft",
+              "active",
+              "inactive"
+            ]
           },
           "created_at": {
             "type": "string",
@@ -150,6 +1247,262 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "Coupon": {
+        "type": "object",
+        "description": "Cupom do projeto. A abrangência é dada por scope + as listas correspondentes (ADR 0047).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "discount_type": {
+            "type": "string",
+            "enum": [
+              "percent",
+              "fixed"
+            ]
+          },
+          "discount_value": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Percentual em pontos (10 = 10%) ou valor em CENTAVOS, conforme discount_type."
+          },
+          "scope": {
+            "type": "string",
+            "description": "Onde o cupom vale: todo o projeto, produtos ou ofertas selecionados."
+          },
+          "product_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "offer_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "affiliate_account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Atribuições de afiliado elegíveis."
+          },
+          "visible_to_affiliates": {
+            "type": "boolean",
+            "description": "Divulgação na vitrine do afiliado. Não altera a validade no checkout (ADR 0048)."
+          },
+          "subscription_apply": {
+            "type": "string",
+            "description": "Se o desconto vale só na adesão ou em todos os ciclos."
+          },
+          "max_uses": {
+            "type": "integer"
+          },
+          "max_uses_per_customer": {
+            "type": "integer"
+          },
+          "current_uses": {
+            "type": "integer"
+          },
+          "min_order_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first_purchase_only": {
+            "type": "boolean"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CouponSelectionOption": {
+        "type": "object",
+        "description": "Um alvo selecionável ao restringir um cupom.",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "product",
+              "offer",
+              "affiliate"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "ExperimentReport": {
+        "type": "object",
+        "description": "Resultado do teste A/B de layout do checkout do produto, na janela consultada.",
+        "properties": {
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExperimentVariant"
+            }
+          }
+        }
+      },
+      "ExperimentVariant": {
+        "type": "object",
+        "properties": {
+          "variant": {
+            "type": "string"
+          },
+          "layout": {
+            "type": "string"
+          },
+          "views": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sessions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "approved": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "conversion": {
+            "type": "number",
+            "format": "double",
+            "description": "Aprovadas / sessões."
+          }
+        }
+      },
+      "FunnelStep": {
+        "type": "object",
+        "description": "Etapa do funil pós-compra (one-click upsell/downsell). Cada aceite é uma VENDA NOVA, não uma mutação da compra original (ADR 0045).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "offer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offer_name": {
+            "type": "string"
+          },
+          "offer_price_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offer_max_installments": {
+            "type": "integer"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "show_when": {
+            "type": "string",
+            "description": "Condição de exibição da etapa (ex.: aceite ou recusa da anterior)."
+          },
+          "headline": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "video_url": {
+            "type": "string"
+          },
+          "page_url": {
+            "type": "string"
+          },
+          "cta_accept": {
+            "type": "string"
+          },
+          "cta_decline": {
+            "type": "string"
+          },
+          "views_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accepts_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "declines_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "approved_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "revenue_cents": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -208,7 +1561,94 @@
             "type": "string",
             "format": "uri",
             "description": "URL do checkout hospedado da oferta, pronta para uso.",
-            "example": "https://checkout.yeon.com.br/of_a1b2c3d4e5"
+            "example": "https://pay.yeon.com.br/of_a1b2c3d4e5"
+          }
+        }
+      },
+      "OrderBump": {
+        "type": "object",
+        "description": "Order bump: um bump vende uma OFERTA (plano), não um produto (ADR 0025).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Produto em cujo checkout o bump aparece."
+          },
+          "bump_product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bump_product_name": {
+            "type": "string"
+          },
+          "bump_offer_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Plano oferecido, de onde sai o preço. Vazio só em bump legado sem plano ativo: o checkout o ignora."
+          },
+          "bump_offer_name": {
+            "type": "string"
+          },
+          "bump_offer_type": {
+            "type": "string",
+            "enum": [
+              "one_time",
+              "recurring"
+            ]
+          },
+          "bump_offer_price_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bump_offer_interval": {
+            "type": "string",
+            "description": "Cadência do plano; vazia em plano avulso."
+          },
+          "bump_offer_interval_count": {
+            "type": "integer"
+          },
+          "discount_type": {
+            "type": "string"
+          },
+          "discount_value": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "display_text": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OrderBumps": {
+        "type": "object",
+        "description": "O bloco de bumps de um produto. O título é único do bloco; vazio significa não exibir.",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "bumps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderBump"
+            }
           }
         }
       },
@@ -231,17 +1671,49 @@
           }
         }
       },
-      "ErrorResponse": {
+      "Product": {
         "type": "object",
+        "description": "Identidade do produto (nome, descrição, imagem, status). Tudo que define como o comprador paga — preço, moeda, parcelamento, recorrência — vive exclusivamente nas ofertas.",
         "properties": {
-          "success": {
-            "type": "boolean",
-            "example": false
+          "id": {
+            "type": "string",
+            "format": "uuid"
           },
-          "error": {
+          "name": {
             "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status do produto; afeta todas as ofertas.",
+            "example": "active"
+          },
+          "offers": {
+            "type": "array",
+            "description": "Ofertas ativas do produto, ordenadas por posição. Presente apenas quando include=offers.",
+            "items": {
+              "$ref": "#/components/schemas/Offer"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
+      },
+      "ProductTheme": {
+        "type": "object",
+        "description": "Tema do checkout do produto, em JSONB livre. Faz merge raso sobre o tema do projeto (ADR 0009). 404 quando o produto não tem tema próprio e herda o do projeto.",
+        "additionalProperties": true
       }
     },
     "securitySchemes": {

@@ -20,7 +20,29 @@
         "group": "API",
         "pages": [
           "api/introducao",
-          "api/listar-produtos"
+          "api/permissoes"
+        ]
+      },
+      {
+        "group": "Catálogo",
+        "pages": [
+          "api/listar-produtos",
+          "api/catalogo/listar-produtos",
+          "api/catalogo/detalhar-produto",
+          "api/catalogo/listar-ofertas",
+          "api/catalogo/listar-order-bumps",
+          "api/catalogo/listar-funil",
+          "api/catalogo/consultar-tema",
+          "api/catalogo/resultado-teste-ab",
+          "api/catalogo/exportar-produtos"
+        ]
+      },
+      {
+        "group": "Cupons",
+        "pages": [
+          "api/cupons/listar-cupons",
+          "api/cupons/detalhar-cupom",
+          "api/cupons/listar-alvos"
         ]
       },
       {
