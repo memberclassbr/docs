@@ -20,7 +20,8 @@
         "group": "API",
         "pages": [
           "api/introducao",
-          "api/permissoes"
+          "api/permissoes",
+          "api/idempotencia"
         ]
       },
       {
@@ -34,7 +35,17 @@
           "api/catalogo/listar-funil",
           "api/catalogo/consultar-tema",
           "api/catalogo/resultado-teste-ab",
-          "api/catalogo/exportar-produtos"
+          "api/catalogo/exportar-produtos",
+          "api/catalogo/criar-produto",
+          "api/catalogo/atualizar-produto",
+          "api/catalogo/excluir-produto",
+          "api/catalogo/criar-oferta",
+          "api/catalogo/atualizar-oferta",
+          "api/catalogo/excluir-oferta",
+          "api/catalogo/substituir-bumps",
+          "api/catalogo/substituir-funil",
+          "api/catalogo/definir-tema",
+          "api/catalogo/remover-tema"
         ]
       },
       {
@@ -42,7 +53,10 @@
         "pages": [
           "api/cupons/listar-cupons",
           "api/cupons/detalhar-cupom",
-          "api/cupons/listar-alvos"
+          "api/cupons/listar-alvos",
+          "api/cupons/criar-cupom",
+          "api/cupons/atualizar-cupom",
+          "api/cupons/excluir-cupom"
         ]
       },
       {
