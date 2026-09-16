@@ -167,6 +167,24 @@
         ]
       },
       {
+        "group": "Co-produção",
+        "pages": [
+          "api/coproducao/listar-coprodutores",
+          "api/coproducao/convidar",
+          "api/coproducao/percentual",
+          "api/coproducao/encerrar",
+          "api/coproducao/cancelar-convite",
+          "api/coproducao/minhas-coproducoes",
+          "api/coproducao/rendimentos",
+          "api/coproducao/produtos",
+          "api/coproducao/detalhar-produto",
+          "api/coproducao/convites-recebidos",
+          "api/coproducao/aceitar",
+          "api/coproducao/recusar",
+          "api/coproducao/sair"
+        ]
+      },
+      {
         "group": "Webhooks",
         "pages": [
           "webhooks/introducao",

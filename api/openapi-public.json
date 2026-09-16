@@ -7653,6 +7653,1221 @@
         ]
       }
     },
+    "/api/public/v1/products/{id}/coproductions": {
+      "get": {
+        "operationId": "listProductCoproductions",
+        "summary": "Lista os co-produtores do produto",
+        "description": "Os acordos ATIVOS do produto e os convites ainda pendentes. O produto precisa ser do projeto da chave.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProductCoproductions"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não existe, não é da conta da chave, ou é de OUTRO projeto da mesma conta. As três respostas são idênticas de propósito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/products/{id}/coproductions/invite": {
+      "post": {
+        "operationId": "inviteCoproducer",
+        "summary": "Convida um co-produtor",
+        "description": "Manda o convite por e-mail. Quem aceita escolhe em qual projeto recebe — o convite não decide isso.\n\n`percent` é a fatia sobre o **líquido** da venda, de 1 a 95, e a soma dos acordos ativos do produto não pode passar de 95: o produtor precisa sobrar. Quem for convidado precisa ter **KYC aprovado** para aceitar.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoproductionInviteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Convite criado e e-mail enviado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CoproductionInvite"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — e-mail inválido, percentual fora de 1–95, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o produto não existe, não é da conta da chave, ou é de OUTRO projeto da mesma conta. As três respostas são idênticas de propósito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `COPROD_PERCENT_EXCEEDS_CAP`: a soma das fatias ativas passaria de 95%. `COPROD_ALREADY_ACTIVE`: essa pessoa já co-produz o produto. `COPROD_INVITE_PENDING`. `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions/{id}/percent": {
+      "put": {
+        "operationId": "changeCoproductionPercent",
+        "summary": "Propõe um novo percentual ao co-produtor",
+        "description": "Mudar a fatia de um acordo ATIVO **não é uma escrita direta**: um acordo é entre duas partes, então a mudança vira um convite que o co-produtor precisa aceitar. Por isso a resposta é um convite, não o acordo — e o acordo só muda quando o outro lado aceita.\n\nVale para vendas futuras: a fatia de cada venda é carimbada quando o dinheiro se move.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da co-produção (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoproductionPercentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Convite de mudança criado e enviado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CoproductionInvite"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — o percentual precisa ser um inteiro entre 1 e 95.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — `COPROD_NOT_FOUND`: a co-produção não existe, não está ativa, ou é de um produto de outro projeto da mesma conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `COPROD_PERCENT_EXCEEDS_CAP`: a soma das fatias ativas passaria de 95%. `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions/{id}": {
+      "delete": {
+        "operationId": "endCoproduction",
+        "summary": "Encerra uma co-produção",
+        "description": "Pelo lado do produtor. As vendas futuras deixam de render fatia; as fatias já registradas continuam do co-produtor e seguem o relógio de retenção delas — o dinheiro que já entrou tem dono.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da co-produção (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "removed"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — `COPROD_NOT_FOUND`: a co-produção não existe, não está ativa, ou é de um produto de outro projeto da mesma conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproduction-invites/{id}": {
+      "delete": {
+        "operationId": "cancelCoproductionInvite",
+        "summary": "Cancela um convite de co-produção",
+        "description": "Invalida o link de aceite na hora. Só convite de um produto do projeto da chave.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do convite (UUID), como devolvido por `listProductCoproductions`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "cancelled"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o convite não existe, já foi aceito/recusado, ou é de um produto de outro projeto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions": {
+      "get": {
+        "operationId": "listMyCoproductions",
+        "summary": "Lista as co-produções do projeto",
+        "description": "Os acordos em que o projeto da chave é o CO-PRODUTOR — o que você recebe, não o que você vende. Acordo apontado para outro projeto da sua conta não aparece.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Coproduction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions/earnings": {
+      "get": {
+        "operationId": "listCoproductionEarnings",
+        "summary": "Lista o que você recebeu por produto",
+        "description": "O agregado da SUA participação: quantas vendas e quanto líquido cada produto co-produzido rendeu ao projeto da chave.\n\nÉ um total, não um extrato da operação do produtor: não traz compradores, pedidos nem cobranças. Os lançamentos do seu saldo ficam no Financeiro.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CoproductionEarning"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions/products": {
+      "get": {
+        "operationId": "listCoproducedProducts",
+        "summary": "Lista os produtos que você co-produz",
+        "description": "Os produtos das suas co-produções ativas, com as ofertas e o que cada um já rendeu ao projeto da chave. Sem compradores, pedidos ou transações do produtor (§7).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CoproducedProduct"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions/products/{id}": {
+      "get": {
+        "operationId": "getCoproducedProduct",
+        "summary": "Detalha um produto que você co-produz",
+        "description": "O mesmo conteúdo de `listCoproducedProducts`, para um produto. Produto que você não co-produz pelo projeto da chave responde 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CoproducedProduct"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — `COPROD_NOT_FOUND`: você não co-produz este produto pelo projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions/invites": {
+      "get": {
+        "operationId": "listMyCoproductionInvites",
+        "summary": "Lista os convites de co-produção recebidos",
+        "description": "A caixa de convites da conta da chave: o que foi endereçado ao e-mail dela e ainda está pendente. O `id` daqui é o que `acceptCoproductionInvite` e `refuseCoproductionInvite` recebem — o token do e-mail não é necessário.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CoproductionInvite"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:read (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions/invites/{id}/accept": {
+      "post": {
+        "operationId": "acceptCoproductionInvite",
+        "summary": "Aceita um convite de co-produção",
+        "description": "Cria o acordo: uma fatia de cada venda daquele produto passa a ir para o **projeto da chave**.\n\nO projeto de destino **não se escolhe por aqui**: `project_id` é opcional e, se enviado, precisa ser o projeto da chave — qualquer outro é `400 DESTINATION_PROJECT_MISMATCH`. O projeto precisa de **KYC aprovado**: é para onde o dinheiro vai.\n\nUma conta não pode ser afiliada E co-produtora do mesmo produto: afiliação viva recusa o aceite com `COPROD_ALREADY_AFFILIATE`.\n\nConvite de MUDANÇA de percentual usa este mesmo endpoint — aceitar aplica o novo percentual ao acordo existente.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do convite (UUID), como devolvido por `listMyCoproductionInvites`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoproductionAcceptInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "accepted"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `DESTINATION_PROJECT_MISMATCH`: o `project_id` enviado não é o projeto da chave. `COPROD_PROJECT_REQUIRED`. `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:write (error_code API_TOKEN_SCOPE_MISSING). `KYC_NOT_APPROVED`: conclua o KYC do projeto antes de aceitar. `COPROD_PROJECT_NOT_OWNED`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — `COPROD_INVITE_INVALID`: o convite não existe, expirou, já foi respondido, ou foi endereçado a outro e-mail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `COPROD_ALREADY_AFFILIATE`: você tem afiliação viva a este produto. `COPROD_PERCENT_EXCEEDS_CAP`. `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions/invites/{id}/refuse": {
+      "post": {
+        "operationId": "refuseCoproductionInvite",
+        "summary": "Recusa um convite de co-produção",
+        "description": "Encerra o convite sem criar acordo. Num convite de mudança de percentual, recusar mantém o acordo como está.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do convite (UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "refused"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — `COPROD_INVITE_INVALID`: o convite não existe, expirou, já foi respondido, ou foi endereçado a outro e-mail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
+    "/api/public/v1/coproductions/{id}/leave": {
+      "post": {
+        "operationId": "leaveCoproduction",
+        "summary": "Sai de uma co-produção",
+        "description": "Pelo lado do co-produtor. As vendas futuras deixam de render fatia; as já registradas continuam suas e seguem o relógio de retenção delas.\n\nSó co-produção que recebe no projeto da chave: a que aponta para outro projeto da sua conta responde 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da co-produção (UUID), como devolvido por `listMyCoproductions`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "left"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão coproduction:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a co-produção não é sua, não está ativa, ou recebe em outro projeto da sua conta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "co-produção"
+        ]
+      }
+    },
     "/api/public/v1/subscriptions": {
       "get": {
         "operationId": "listSubscriptions",
@@ -9458,6 +10673,355 @@
           }
         }
       },
+      "CoproducedOffer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "public_id": {
+            "type": "string",
+            "description": "É o `{public_id}` do link de checkout."
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "price_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Em centavos."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "interval": {
+            "type": "string",
+            "nullable": true
+          },
+          "interval_count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recurring_interval": {
+            "type": "string",
+            "nullable": true
+          },
+          "max_installments": {
+            "type": "integer"
+          },
+          "free_installments": {
+            "type": "integer"
+          },
+          "default_installments_mode": {
+            "type": "string"
+          },
+          "trial_days": {
+            "type": "integer"
+          },
+          "max_cycles": {
+            "type": "integer"
+          },
+          "payment_methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "max_sales": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sold_count": {
+            "type": "integer"
+          },
+          "statement_descriptor": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CoproducedProduct": {
+        "type": "object",
+        "description": "Um produto que o projeto da chave co-produz. Traz a vitrine e a sua participação — nunca compradores, pedidos ou transações do produtor.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "image_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "content_format": {
+            "type": "string",
+            "nullable": true
+          },
+          "niche": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "producer_name": {
+            "type": "string"
+          },
+          "coproduction_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Fatia sobre o LÍQUIDO da venda. Inteiro de 1 a 95; a soma das fatias ativas do produto não passa de 95."
+          },
+          "coproducer_project_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coproducer_project_name": {
+            "type": "string"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Quando o acordo começou."
+          },
+          "sales_count": {
+            "type": "integer"
+          },
+          "net_received_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Em centavos."
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoproducedOffer"
+            }
+          }
+        }
+      },
+      "Coproduction": {
+        "type": "object",
+        "description": "Um acordo de co-produção: qual produto, por qual fatia e em que projeto o co-produtor recebe.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "producer_account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "producer_project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Projeto do produto — o CNPJ que vende."
+          },
+          "producer_name": {
+            "type": "string"
+          },
+          "coproducer_account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coproducer_email": {
+            "type": "string",
+            "format": "email",
+            "description": "Só aparece para o lado do produtor, que precisa saber com quem tem o acordo."
+          },
+          "coproducer_name": {
+            "type": "string"
+          },
+          "coproducer_project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Projeto que RECEBE a fatia. Escolhido no aceite e não alterável por esta API."
+          },
+          "coproducer_project_name": {
+            "type": "string"
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Fatia sobre o LÍQUIDO da venda. Inteiro de 1 a 95; a soma das fatias ativas do produto não passa de 95."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "removed"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "removed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "CoproductionAcceptInput": {
+        "type": "object",
+        "description": "Corpo opcional. O destino da fatia é sempre o projeto da chave; enviar outro `project_id` é 400.",
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Precisa ser o projeto da chave, quando enviado. Omitir é o caminho normal."
+          }
+        }
+      },
+      "CoproductionEarning": {
+        "type": "object",
+        "description": "O agregado da sua participação num produto. Não é extrato: é total.",
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "sales_count": {
+            "type": "integer",
+            "description": "Vendas que renderam fatia ao projeto da chave."
+          },
+          "net_received_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Líquido recebido, em centavos."
+          }
+        }
+      },
+      "CoproductionInvite": {
+        "type": "object",
+        "description": "Convite de co-produção. O TOKEN do aceite não aparece aqui: ele vai por e-mail para quem foi convidado. Use o `id` nas rotas de aceite e recusa.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "invited_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Fatia sobre o LÍQUIDO da venda. Inteiro de 1 a 95; a soma das fatias ativas do produto não passa de 95."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "new",
+              "percent_change"
+            ],
+            "description": "`new` cria um acordo novo; `percent_change` propõe outro percentual a um acordo que já existe."
+          },
+          "coproduction_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "O acordo que o convite altera, em `kind: percent_change`."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "refused",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "producer_name": {
+            "type": "string"
+          }
+        }
+      },
+      "CoproductionInviteInput": {
+        "type": "object",
+        "required": [
+          "email",
+          "percent"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Quem você está convidando. Quem aceita escolhe em qual projeto recebe."
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Fatia sobre o LÍQUIDO da venda. Inteiro de 1 a 95; a soma das fatias ativas do produto não passa de 95."
+          }
+        }
+      },
+      "CoproductionPercentInput": {
+        "type": "object",
+        "required": [
+          "percent"
+        ],
+        "properties": {
+          "percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 95,
+            "description": "Fatia sobre o LÍQUIDO da venda. Inteiro de 1 a 95; a soma das fatias ativas do produto não passa de 95."
+          }
+        }
+      },
       "Coupon": {
         "type": "object",
         "description": "Cupom do projeto. A abrangência é dada por scope + as listas correspondentes (ADR 0047).",
@@ -10837,6 +12401,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Affiliation"
+            }
+          }
+        }
+      },
+      "ProductCoproductions": {
+        "type": "object",
+        "properties": {
+          "coproductions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Coproduction"
+            }
+          },
+          "invites": {
+            "type": "array",
+            "description": "Convites ainda pendentes deste produto.",
+            "items": {
+              "$ref": "#/components/schemas/CoproductionInvite"
             }
           }
         }
