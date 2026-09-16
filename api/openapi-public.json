@@ -4135,6 +4135,260 @@
         ]
       }
     },
+    "/api/public/v1/disputes/{id}/accept": {
+      "post": {
+        "operationId": "acceptDispute",
+        "summary": "Aceita a disputa",
+        "description": "Desiste da defesa: o dinheiro fica com o comprador e a venda deixa de contar no `sold_count` da oferta.\n\n**Não tem volta.** Por isso exige a permissão `dispute:accept`, que `dispute:write` NÃO satisfaz — quem anexa provas não ganha o direito de desistir da disputa.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da disputa (UUID). É ESTA a disputa afetada — o corpo não escolhe outra.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `notes` ausente, id do corpo divergente do caminho, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão **dispute:accept** (`dispute:write` não basta) (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a disputa não existe neste projeto, ou já foi resolvida: a operação só vale enquanto ela está aberta ou com defesa enviada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "disputes"
+        ]
+      }
+    },
+    "/api/public/v1/disputes/{id}/evidence": {
+      "post": {
+        "operationId": "submitDisputeEvidence",
+        "summary": "Envia evidências",
+        "description": "Anexa a defesa do produtor à disputa e a coloca em `evidence_sent`. A evidência automática que a Yeon já reuniu (data da transação, IP da compra) segue junto — o que você envia aqui é o que só o produtor tem.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da disputa (UUID). É ESTA a disputa afetada — o corpo não escolhe outra.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisputeEvidenceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `notes` ausente, id do corpo divergente do caminho, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão dispute:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a disputa não existe neste projeto, ou já foi resolvida: a operação só vale enquanto ela está aberta ou com defesa enviada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "disputes"
+        ]
+      }
+    },
     "/api/public/v1/ledger/available-withdrawals": {
       "get": {
         "operationId": "listAvailableWithdrawals",
@@ -6400,6 +6654,26 @@
           },
           "confirmation_email_sent": {
             "type": "boolean"
+          }
+        }
+      },
+      "DisputeEvidenceRequest": {
+        "type": "object",
+        "required": [
+          "notes"
+        ],
+        "description": "A defesa que o produtor anexa. A disputa é a do caminho; não envie o id aqui.",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Texto da defesa. Obrigatório."
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "URLs dos arquivos de apoio."
           }
         }
       },

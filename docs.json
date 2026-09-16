@@ -112,7 +112,9 @@
         "group": "Disputas",
         "pages": [
           "api/disputas/listar",
-          "api/disputas/detalhar"
+          "api/disputas/detalhar",
+          "api/disputas/enviar-evidencias",
+          "api/disputas/aceitar"
         ]
       },
       {
