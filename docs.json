@@ -126,6 +126,18 @@
         ]
       },
       {
+        "group": "Configuração de webhooks",
+        "pages": [
+          "api/webhooks-config/listar.mdx",
+          "api/webhooks-config/criar.mdx",
+          "api/webhooks-config/atualizar.mdx",
+          "api/webhooks-config/excluir.mdx",
+          "api/webhooks-config/testar.mdx",
+          "api/webhooks-config/entregas.mdx",
+          "api/webhooks-config/reenviar.mdx"
+        ]
+      },
+      {
         "group": "Webhooks",
         "pages": [
           "webhooks/introducao",
