@@ -121,7 +121,8 @@
         "group": "Financeiro",
         "pages": [
           "api/financeiro/liberacoes",
-          "api/financeiro/disponiveis-para-saque"
+          "api/financeiro/disponiveis-para-saque",
+          "api/financeiro/solicitar-saque"
         ]
       },
       {
