@@ -66,6 +66,15 @@
           "api/transacoes/detalhar",
           "api/transacoes/eventos",
           "api/transacoes/exportar",
+          "api/transacoes/reembolsos",
+          "api/transacoes/reenviar-evento"
+        ]
+      },
+      {
+        "group": "Reembolsos",
+        "pages": [
+          "api/reembolsos/reembolsar-venda",
+          "api/reembolsos/reembolsar-cobranca",
           "api/transacoes/reembolsos"
         ]
       },
@@ -83,7 +92,8 @@
           "api/clientes/detalhar",
           "api/clientes/pedidos",
           "api/clientes/carrinhos",
-          "api/clientes/eventos"
+          "api/clientes/eventos",
+          "api/clientes/reenviar-evento"
         ]
       },
       {

@@ -638,6 +638,300 @@
         ]
       }
     },
+    "/api/public/v1/billing/transactions/{orderID}/events/{logID}/resend": {
+      "post": {
+        "operationId": "resendTransactionEvent",
+        "summary": "Reenvia uma entrega de webhook",
+        "description": "Reenvia ao endpoint do produtor uma entrega já registrada no histórico desta venda. Repetir com a MESMA chave não entrega duas vezes; para entregar de novo de propósito, use outra chave.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "orderID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "logID",
+            "in": "path",
+            "required": true,
+            "description": "Id da entrega, vindo do histórico de eventos.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão billing:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a entrega não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/public/v1/billing/transactions/{orderID}/refund": {
+      "post": {
+        "operationId": "refundTransaction",
+        "summary": "Reembolsa uma venda",
+        "description": "Devolve dinheiro ao comprador. Com `ON…` estorna TODAS as cobranças do pedido e carimba todas as linhas; com `ON…-N` devolve o valor daquela linha (ADR 0024/0039).\n\nO dinheiro sai também dos beneficiários: a fatia do afiliado e a do co-produtor são revertidas junto, nos mesmos participantes que a venda creditou.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "orderID",
+            "in": "path",
+            "required": true,
+            "description": "Pedido (`ON…`) para devolver a venda inteira, ou a linha (`ON…-N`) para devolver só um produto do pedido. Reembolso por linha e parcial não são suportados em pagamento dividido.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RefundOrderResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "207": {
+            "description": "Multi-Status — parte das cobranças voltou e parte não. O corpo é o mesmo, com `status: partially_refunded`; olhe `legs` para saber qual falhou e por quê. NÃO repita com a mesma chave esperando resultado diferente: a repetição devolve esta mesma resposta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RefundOrderResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão **billing:refund** (error_code API_TOKEN_SCOPE_MISSING). Reembolso é ação sensível e tem permissão própria: `billing:read` e `billing:write` NÃO a satisfazem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o pedido não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — a cobrança não pode ser reembolsada no estado atual (`PAYMENT_NOT_REFUNDABLE`), ou conflito de idempotência: `IDEMPOTENCY_KEY_REUSED` para a mesma chave em requisição diferente, `IDEMPOTENCY_IN_PROGRESS` enquanto a primeira roda.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable — o valor pedido excede o que resta reembolsável (`REFUND_AMOUNT_EXCEEDS_RESIDUAL`). É a defesa contra devolver duas vezes: o segundo reembolso integral de uma cobrança já devolvida cai aqui.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway — o provedor recusou processar o reembolso (`REFUND_GATEWAY_FAILED`). A chave é liberada; pode repetir.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "refunds"
+        ]
+      }
+    },
     "/api/public/v1/catalog/coupons": {
       "get": {
         "operationId": "listCoupons",
@@ -3399,6 +3693,137 @@
         ]
       }
     },
+    "/api/public/v1/customers/{id}/events/{logID}/resend": {
+      "post": {
+        "operationId": "resendCustomerEvent",
+        "summary": "Reenvia uma entrega de um cliente",
+        "description": "Reenvia uma entrega registrada no histórico deste comprador.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "E-mail do comprador ou o `cust_…`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "logID",
+            "in": "path",
+            "required": true,
+            "description": "Id da entrega, vindo do histórico de eventos.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão customer:write (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a entrega não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "customers"
+        ]
+      }
+    },
     "/api/public/v1/customers/{id}/orders": {
       "get": {
         "operationId": "listCustomerOrders",
@@ -3936,6 +4361,150 @@
           },
           "429": {
             "description": "Too Many Requests — a chave excedeu o teto por minuto (error_code API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "refunds"
+        ]
+      },
+      "post": {
+        "operationId": "refundPayment",
+        "summary": "Reembolsa uma cobrança",
+        "description": "Devolve, no todo ou em parte, UMA cobrança. Omitir `amount_cents` devolve o saldo reembolsável restante.\n\nPara devolver a venda inteira — que pode ter mais de uma cobrança — use o reembolso por pedido.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "paymentID",
+            "in": "path",
+            "required": true,
+            "description": "Id da cobrança.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Refund"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — corpo inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão **billing:refund** (error_code API_TOKEN_SCOPE_MISSING). Reembolso é ação sensível e tem permissão própria: `billing:read` e `billing:write` NÃO a satisfazem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — a cobrança não existe ou não pertence ao projeto da chave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — a cobrança não pode ser reembolsada no estado atual (`PAYMENT_NOT_REFUNDABLE`), ou conflito de idempotência: `IDEMPOTENCY_KEY_REUSED` para a mesma chave em requisição diferente, `IDEMPOTENCY_IN_PROGRESS` enquanto a primeira roda.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable — o valor pedido excede o que resta reembolsável (`REFUND_AMOUNT_EXCEEDS_RESIDUAL`). É a defesa contra devolver duas vezes: o segundo reembolso integral de uma cobrança já devolvida cai aqui.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto de ESCRITAS por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway — o provedor recusou processar o reembolso (`REFUND_GATEWAY_FAILED`). A chave é liberada; pode repetir.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5995,6 +6564,104 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "RefundOrderLeg": {
+        "type": "object",
+        "description": "O desfecho de UMA cobrança dentro do reembolso da venda. No pagamento dividido são duas.",
+        "properties": {
+          "payment_id": {
+            "type": "string"
+          },
+          "gateway_charge_id": {
+            "type": "string"
+          },
+          "leg_index": {
+            "type": "integer",
+            "description": "1 ou 2 no pagamento dividido; 0 numa compra comum."
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O que esta cobrança capturou."
+          },
+          "refunded_amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O que voltou desta cobrança."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "refunded",
+              "already_refunded",
+              "skipped",
+              "failed"
+            ],
+            "description": "`already_refunded` não é erro (nada a fazer); `skipped` é cobrança que nunca capturou."
+          },
+          "error": {
+            "type": "string",
+            "description": "Explica a perna que falhou. Vazio nas demais."
+          }
+        }
+      },
+      "RefundOrderResult": {
+        "type": "object",
+        "description": "Resultado do reembolso de uma VENDA. Um pedido pode ter mais de uma cobrança (pagamento dividido), e cada uma tem desfecho próprio — por isso a resposta lista as pernas.",
+        "properties": {
+          "order_id": {
+            "type": "string"
+          },
+          "transaction_code": {
+            "type": "string",
+            "description": "A linha devolvida: `ON…` na cobrança inteira, `ON…-N` no reembolso por linha."
+          },
+          "position": {
+            "type": "integer"
+          },
+          "line_refunded_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "refunded",
+              "partially_refunded",
+              "failed"
+            ],
+            "description": "`refunded` quando todas as cobranças voltaram, `partially_refunded` quando algumas, `failed` quando nenhuma."
+          },
+          "refunded_amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "O que efetivamente voltou ao comprador."
+          },
+          "legs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefundOrderLeg"
+            }
+          }
+        }
+      },
+      "RefundRequest": {
+        "type": "object",
+        "description": "Corpo do reembolso. Omitir amount_cents (ou enviar 0) devolve todo o saldo reembolsável restante.",
+        "properties": {
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Valor a devolver, em CENTAVOS. 0 ou ausente = tudo o que resta."
+          },
+          "reason": {
+            "type": "string"
+          },
+          "seller_notes": {
+            "type": "string",
+            "description": "Anotação interna do produtor."
           }
         }
       },
