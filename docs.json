@@ -128,13 +128,23 @@
       {
         "group": "Configuração de webhooks",
         "pages": [
-          "api/webhooks-config/listar.mdx",
-          "api/webhooks-config/criar.mdx",
-          "api/webhooks-config/atualizar.mdx",
-          "api/webhooks-config/excluir.mdx",
-          "api/webhooks-config/testar.mdx",
-          "api/webhooks-config/entregas.mdx",
-          "api/webhooks-config/reenviar.mdx"
+          "api/webhooks-config/listar",
+          "api/webhooks-config/criar",
+          "api/webhooks-config/atualizar",
+          "api/webhooks-config/excluir",
+          "api/webhooks-config/testar",
+          "api/webhooks-config/entregas",
+          "api/webhooks-config/reenviar"
+        ]
+      },
+      {
+        "group": "Membros",
+        "pages": [
+          "api/membros/listar",
+          "api/membros/convidar",
+          "api/membros/permissoes",
+          "api/membros/remover-acesso",
+          "api/membros/cancelar-convite"
         ]
       },
       {

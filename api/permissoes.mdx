@@ -38,6 +38,18 @@ As ações sensíveis **não** vêm junto com a escrita. Elas são concedidas um
 
 Quem recebeu escrita de catálogo não recebeu o direito de devolver dinheiro junto.
 
+## Uma chave não concede o que ela não tem
+
+`members:manage` deixa a chave convidar pessoas e editar as permissões delas neste projeto — mas nunca acima do nível que a própria chave carrega.
+
+Uma chave com `members:manage` e `catalog:read` concede `catalog: read` a um membro. Se pedir `catalog: write`, a resposta é `403` com `error_code` `GRANT_ABOVE_OWN_LEVEL`.
+
+<Note>
+  Sem essa regra, uma chave estreita viraria uma chave larga em dois passos: bastaria convidar alguém com mais acesso e depois agir por essa pessoa.
+</Note>
+
+Como consequência, uma chave não concede os módulos `checkout` e `integration`: não existe permissão de chave para eles. Quem precisa desses dois é convidado pelo Painel.
+
 ## Vitrine e gestão são permissões diferentes
 
 <ParamField path="catalog:storefront" type="permissão">

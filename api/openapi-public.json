@@ -5820,6 +5820,505 @@
         ]
       }
     },
+    "/api/public/v1/members": {
+      "get": {
+        "operationId": "listProjectMembers",
+        "summary": "Lista os membros do projeto",
+        "description": "Quem tem acesso a ESTE projeto: o dono da conta (sempre), os membros com ao menos uma permissão aqui, e os convites ainda não aceitos como linhas `status: pending` (o `id` dessas linhas é o do CONVITE). Membro de outro projeto da mesma conta não aparece.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProjectMember"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão members:manage (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "membros"
+        ]
+      }
+    },
+    "/api/public/v1/members/invite": {
+      "post": {
+        "operationId": "inviteProjectMember",
+        "summary": "Convida alguém para o projeto",
+        "description": "Dá acesso a ESTE projeto (o da chave) — nunca a outro, e o projeto não vem do corpo. O desfecho depende do que o e-mail já é na conta:\n\n- ainda não é membro → **201** com o convite criado, e o link de aceite vai por e-mail para a pessoa. O token do convite não é devolvido aqui: aceitar é ato de quem foi convidado.\n- já é membro ativo da conta → **200** `{\"status\": \"granted\"}`: as permissões deste projeto são aplicadas direto, sem novo aceite (a pessoa já aceitou esta conta).\n- era membro e foi revogado → **200** `{\"status\": \"reactivated\"}`.\n\nAs permissões seguem a grade por projeto do painel (`catalog`, `billing`, `customer`, `subscription`, `dispute`, `checkout`, `integration`), com nível `none`, `read` ou `write`. Módulo que redireciona dinheiro ou concede acesso (`ledger`, `webhook`, `coproduction`, `affiliate`, `project`, `members`) NÃO é delegável e é recusado com 400.\n\nA chave nunca concede acima do que ela própria carrega: pedir `write` num módulo em que a chave só tem `read` responde 403 `GRANT_ABOVE_OWN_LEVEL`. Como não existe permissão de chave para `checkout` nem `integration`, uma chave não concede esses dois — quem precisa deles convida pelo painel.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Identificador da TENTATIVA, escolhido por você (um UUID serve). Repetir a chamada com a mesma chave não repete o efeito: devolve a resposta da primeira, com o cabeçalho `Idempotent-Replay: true`. É o que torna seguro tentar de novo depois de um timeout, quando você não sabe se a primeira chegou. A chave vale 24 horas e é escopada ao seu projeto. A resposta repetida é a MESMA semanticamente; a ordem das chaves do JSON pode diferir, porque a resposta guardada é normalizada no armazenamento.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Convite criado e e-mail enviado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MemberInvite"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "O e-mail já era membro da conta: o acesso a este projeto foi aplicado direto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "granted",
+                            "reactivated"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — e-mail inválido, módulo desconhecido, módulo não delegável por projeto, nível inválido, ou `IDEMPOTENCY_KEY_REQUIRED` sem o cabeçalho.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão members:manage (error_code API_TOKEN_SCOPE_MISSING). `GRANT_ABOVE_OWN_LEVEL`: a chave pediu um nível acima do que ela carrega. `KYC_NOT_SUBMITTED`: envie o KYC da conta antes de montar a equipe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — `MEMBER_IS_OWNER`: este e-mail é o dono da conta, que já tem acesso total. `IDEMPOTENCY_KEY_REUSED` ou `IDEMPOTENCY_IN_PROGRESS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "membros"
+        ]
+      }
+    },
+    "/api/public/v1/members/{id}/permissions": {
+      "put": {
+        "operationId": "updateProjectMemberPermissions",
+        "summary": "Substitui as permissões do membro neste projeto",
+        "description": "Envia a grade COMPLETA desejada para ESTE projeto: módulo omitido vira `none`. Não toca nos outros projetos da conta nem na existência do membro.\n\nO dono da conta não é editável (403): é assim que a conta nunca fica sem ninguém com acesso total. E a chave não concede acima do que carrega — 403 `GRANT_ABOVE_OWN_LEVEL`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do membro (UUID) — o `id` devolvido por `listProjectMembers`. Linha `pending` carrega o id do CONVITE, que se cancela por `cancelProjectMemberInvite`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberPermissionsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK — o membro com a grade já aplicada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProjectMember"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — módulo desconhecido, módulo não delegável por projeto, ou nível inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão members:manage (error_code API_TOKEN_SCOPE_MISSING). As permissões do DONO da conta não podem ser alteradas. `GRANT_ABOVE_OWN_LEVEL`: a chave pediu um nível acima do que ela carrega.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o membro não existe, não é da conta da chave, ou não tem acesso a ESTE projeto. As três respostas são idênticas de propósito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "membros"
+        ]
+      }
+    },
+    "/api/public/v1/members/{id}": {
+      "delete": {
+        "operationId": "revokeProjectMemberAccess",
+        "summary": "Remove o acesso do membro a este projeto",
+        "description": "Tira as permissões desta pessoa NESTE projeto. É só isso: a pessoa continua na conta, o acesso dela aos outros projetos não muda, e o login dela não é apagado. Quando este era o último projeto em que ela tinha alguma permissão, a associação com a conta fica revogada — e um novo convite a traz de volta.\n\nO dono da conta nunca é removível (403).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do membro (UUID) — o `id` devolvido por `listProjectMembers`. Linha `pending` carrega o id do CONVITE, que se cancela por `cancelProjectMemberInvite`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "revoked"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão members:manage (error_code API_TOKEN_SCOPE_MISSING). O dono da conta não pode ser removido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o membro não existe, não é da conta da chave, ou não tem acesso a ESTE projeto. As três respostas são idênticas de propósito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "membros"
+        ]
+      }
+    },
+    "/api/public/v1/members/invites/{id}": {
+      "delete": {
+        "operationId": "cancelProjectMemberInvite",
+        "summary": "Cancela um convite pendente",
+        "description": "Invalida o link de aceite na hora. Só convite DESTE projeto; convite de outro projeto da mesma conta responde 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do convite pendente (UUID) — o `id` da linha com `status: pending` em `listProjectMembers`.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "cancelled"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — token ausente, inválido ou revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden — a chave não tem a permissão members:manage (error_code API_TOKEN_SCOPE_MISSING).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found — o convite não existe, já foi aceito ou cancelado, ou é de outro projeto. As respostas são idênticas de propósito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "membros"
+        ]
+      }
+    },
     "/api/public/v1/subscriptions": {
       "get": {
         "operationId": "listSubscriptions",
@@ -7868,6 +8367,118 @@
           }
         }
       },
+      "MemberInvite": {
+        "type": "object",
+        "description": "Convite pendente. O TOKEN do aceite não aparece aqui: ele vai por e-mail para quem foi convidado, e aceitar é ato pessoal dessa pessoa — a chave convida, não aceita por terceiro.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Sempre o projeto da chave."
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "permissions": {
+            "type": "object",
+            "description": "Nível por módulo NESTE projeto. Módulo ausente é `none`. Módulos delegáveis: `catalog`, `billing`, `customer`, `subscription`, `dispute`, `checkout`, `integration`.",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "none",
+                "read",
+                "write"
+              ]
+            },
+            "example": {
+              "catalog": "write",
+              "billing": "read"
+            }
+          },
+          "invited_by": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "O link de aceite vale 7 dias."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MemberInviteRequest": {
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Para quem o convite vai."
+          },
+          "permissions": {
+            "type": "object",
+            "description": "Nível por módulo NESTE projeto. Módulo ausente é `none`. Módulos delegáveis: `catalog`, `billing`, `customer`, `subscription`, `dispute`, `checkout`, `integration`.",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "none",
+                "read",
+                "write"
+              ]
+            },
+            "example": {
+              "catalog": "write",
+              "billing": "read"
+            }
+          }
+        }
+      },
+      "MemberPermissionsRequest": {
+        "type": "object",
+        "required": [
+          "permissions"
+        ],
+        "properties": {
+          "permissions": {
+            "type": "object",
+            "description": "Nível por módulo NESTE projeto. Módulo ausente é `none`. Módulos delegáveis: `catalog`, `billing`, `customer`, `subscription`, `dispute`, `checkout`, `integration`.",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "none",
+                "read",
+                "write"
+              ]
+            },
+            "example": {
+              "catalog": "write",
+              "billing": "read"
+            }
+          }
+        }
+      },
       "Offer": {
         "type": "object",
         "description": "Variação de preço/condição comprável do produto.",
@@ -8402,6 +9013,80 @@
               "active",
               "inactive"
             ]
+          }
+        }
+      },
+      "ProjectMember": {
+        "type": "object",
+        "description": "Uma pessoa com acesso ao projeto. Linha com `status: pending` é um CONVITE ainda não aceito: o `id` dela é o do convite, e `user_id`/`name` vêm vazios porque ainda não há login associado.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Id do membro — ou do CONVITE, quando `status` é `pending`."
+          },
+          "account_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Login associado. Vazio em linha `pending`."
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "is_owner": {
+            "type": "boolean",
+            "description": "O dono da conta. Sempre tem acesso total, não é editável e não é removível."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "revoked",
+              "pending"
+            ]
+          },
+          "permissions": {
+            "type": "object",
+            "description": "Nível por módulo NESTE projeto. Módulo ausente é `none`. Módulos delegáveis: `catalog`, `billing`, `customer`, `subscription`, `dispute`, `checkout`, `integration`.",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "none",
+                "read",
+                "write"
+              ]
+            },
+            "example": {
+              "catalog": "write",
+              "billing": "read"
+            }
+          },
+          "invited_by": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "invited_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "accepted_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
