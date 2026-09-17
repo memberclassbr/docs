@@ -1,59 +1,63 @@
 ---
 title: "MCP da Yeon"
-description: "Deixe um agente de IA operar o seu projeto pela API pública"
+description: "Conecte um agente de IA ao seu projeto da Yeon"
 ---
 
-O servidor MCP da Yeon dá a um agente — o Claude Code, por exemplo — as ferramentas para consultar e gerenciar **um projeto seu**: catálogo, vendas, assinaturas, webhooks, afiliados, co-produção, membros e financeiro.
+O servidor MCP da Yeon permite que um agente de IA — como o Claude Code — consulte e gerencie um projeto seu: catálogo, vendas, assinaturas, webhooks, afiliados, co-produção, membros e financeiro.
 
-Você conversa; ele chama a API.
+São **94 ferramentas**, uma para cada operação da [API pública](/api/introducao).
 
-> *"Cria um produto chamado Curso de Fotografia com um plano único de R$ 149,90 e me dá o link de checkout."*
+## Como funciona
 
-## Como ele se encaixa
+O servidor roda na sua máquina e traduz os pedidos do agente em chamadas à API da Yeon, usando um token que você gera no Painel.
 
 ```text
-  você  →  agente  →  servidor MCP  →  API pública da Yeon
+você  →  agente  →  servidor MCP  →  API da Yeon
 ```
 
-O servidor é um **tradutor**, não um atalho. Tudo o que ele faz é HTTP contra a [API pública](/api/introducao), com a mesma chave que você usaria num `curl`:
+As permissões são as do token. O projeto é o do token. Para limitar o que o agente faz, gere um token com menos permissões.
 
-- as **permissões** continuam sendo as da chave;
-- o **projeto** continua sendo o da chave;
-- as **regras de negócio** continuam sendo as da API.
+## O que dá para fazer
 
-Uma ferramenta do MCP não consegue fazer nada que a sua chave não pudesse fazer sozinha. Se você quer limitar o que o agente alcança, limite a chave — não há um segundo lugar onde permissão se configure.
+| grupo | exemplos |
+| --- | --- |
+| Catálogo | criar produto, criar oferta, editar tema, configurar order bumps |
+| Vendas | listar transações, detalhar uma venda, consultar clientes, ver indicadores |
+| Assinaturas | consultar, cancelar, cobrar agora, reemitir fatura Pix |
+| Reembolsos | devolver uma venda, uma linha ou uma cobrança |
+| Financeiro | liberações previstas e solicitação de saque |
+| Disputas | consultar, enviar evidências, aceitar |
+| Webhooks | cadastrar, testar, ver entregas, reenviar |
+| Membros | listar, convidar, alterar permissões, remover acesso |
+| Afiliados | programa do produto, aprovar, percentuais, aderir |
+| Co-produção | convidar, aceitar, percentuais, rendimentos |
+| Cupons | criar, editar, excluir |
 
-## Uma conexão, um projeto
+A lista completa está em [Grupos de ferramentas](/mcp/grupos).
 
-A chave é escolhida na configuração do servidor e não muda em tempo de execução. **Não existe ferramenta para trocar de projeto**, e nenhuma delas aceita `project_id` como argumento.
+## O que não dá
 
-Para operar dois projetos, registre duas conexões, cada uma com a sua chave.
-
-## O que ele não faz
-
-Não é lacuna: é escopo.
-
-| não faz | onde se faz |
+| | onde fazer |
 | --- | --- |
 | criar, listar ou trocar de projeto | Painel |
-| gerar ou revogar chaves de API | Painel |
+| gerar ou revogar tokens de API | Painel |
 | perfil, dados bancários, KYC | Painel |
 | Bling, Nuvemshop, pixels, área de membros | Painel |
-| aceitar convite em nome de outra pessoa | quem foi convidado, pelo link |
-| saldo e extrato da conta | Painel — eles são da conta, não do projeto |
+| aceitar convite em nome de outra pessoa | quem foi convidado, pelo link do e-mail |
+| consultar saldo e extrato da conta | Painel |
 
-E ele **nunca** pede número de cartão, CVV ou senha, nem devolve token de gateway.
+Um servidor opera em **um projeto**. Para dois projetos, registre duas conexões com tokens diferentes.
 
-## Próximos passos
+## Comece por aqui
 
 <Card title="Instalar e conectar" icon="plug" href="/mcp/instalacao">
-  Configuração, registro no Claude Code e como validar que ficou de pé.
+  Baixar, configurar e registrar no Claude Code.
 </Card>
 
 <Card title="Grupos de ferramentas" icon="layer-group" href="/mcp/grupos">
-  As 94 ferramentas, e por que você escolhe só as que usa.
+  As 94 ferramentas e como escolher as que você usa.
 </Card>
 
 <Card title="Segurança" icon="shield-check" href="/mcp/seguranca">
-  Modo leitura, permissões da chave e repetição segura de operações.
+  Modo leitura, permissões e repetição de operações.
 </Card>

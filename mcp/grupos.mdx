@@ -1,30 +1,44 @@
 ---
 title: "Grupos de ferramentas"
-description: "As 94 ferramentas, e por que você liga só as que usa"
+description: "As 94 ferramentas do servidor e como escolher as que você usa"
 ---
 
-O servidor tem **94 ferramentas** — uma por operação da API pública. Você não carrega todas: escolhe grupos.
+`YEON_MCP_GROUPS` define quais ferramentas o servidor carrega. É obrigatório.
 
 ```bash
 --env YEON_MCP_GROUPS=catalog,sales
 ```
 
-## Por que escolher é obrigatório
+Carregue só os grupos que a sua integração usa: cada ferramenta ocupa espaço no contexto do agente, e as 94 juntas consomem cerca de 16 mil tokens por conversa.
 
-`YEON_MCP_GROUPS` não tem valor padrão. Sem ele, o servidor recusa subir e lista os grupos disponíveis.
+| grupo | ferramentas | conteúdo |
+| --- | ---: | --- |
+| `catalog` | 19 | produtos, ofertas, tema, order bumps, funil |
+| `sales` | 13 | transações, clientes, carrinhos, indicadores |
+| `affiliates` | 14 | programa, moderação, adesão |
+| `coproduction` | 13 | acordos, convites, rendimentos |
+| `subscriptions` | 7 | consulta, cancelamento, cobrança, fatura Pix |
+| `webhooks` | 7 | configuração, teste, entregas, reenvio |
+| `coupons` | 6 | cupons e alvos selecionáveis |
+| `members` | 5 | equipe do projeto |
+| `disputes` | 4 | chargebacks |
+| `financial` | 3 | liberações, disponíveis para saque, pedido de saque |
+| `refunds` | 3 | devoluções |
 
-A razão é o **contexto do agente**. Cada ferramenta ocupa espaço na janela dele com o nome, a descrição e o schema dos argumentos — as 94 juntas custam cerca de **16 mil tokens**, gastos em toda conversa, antes de ele fazer qualquer coisa.
+Para carregar todos:
 
-E não é só custo: com 94 ferramentas parecidas, escolher a certa fica mais difícil. `yeon_catalog_products_get`, `yeon_affiliate_my_products_get` e `yeon_coproduction_my_products_get` são três coisas diferentes com nomes vizinhos.
+```bash
+--env YEON_MCP_GROUPS=all
+```
 
-Quem só consulta vendas liga `sales` e paga 13 definições, não 94.
+## Afiliados e co-produção
 
-<Note>
-  Um valor padrão que ligasse tudo seria escolhido por omissão justamente por
-  quem não perceberia a conta. Por isso a escolha é explícita.
-</Note>
+Esses dois grupos têm ferramentas dos dois lados do acordo. As do lado de quem promove ou co-produz têm `my` no nome:
 
-## Os grupos
+- `yeon_affiliate_affiliations_list` — quem é afiliado ao **meu** produto;
+- `yeon_affiliate_my_affiliations_list` — os produtos que **eu** promovo.
+
+## Lista completa
 
 ### `catalog` — 19 ferramentas (9 de leitura, 10 de escrita)
 
@@ -196,22 +210,3 @@ devolução de dinheiro por pedido, linha ou cobrança
 | `yeon_refunds_list` | leitura |
 | `yeon_refunds_refund_payment` | **escrita** |
 | `yeon_refunds_refund_transaction` | **escrita** |
-
-## Os dois lados de afiliados e co-produção
-
-Esses dois módulos têm lados opostos, e a mesma conexão pode estar em qualquer um deles:
-
-- **produtor** — o programa do *meu* produto, quem pediu afiliação, aprovar, percentual;
-- **parceiro** — o que *eu* promovo ou co-produzo, aderir, sair, aceitar convite.
-
-As ferramentas do lado do parceiro têm `my` no nome (`yeon_affiliate_my_products_list`), e a descrição de cada uma diz de qual lado ela é.
-
-## Ligar tudo mesmo assim
-
-É possível, e às vezes é o que você quer — uma sessão de exploração, por exemplo:
-
-```bash
---env YEON_MCP_GROUPS=affiliates,catalog,coproduction,coupons,disputes,financial,members,refunds,sales,subscriptions,webhooks
-```
-
-Só saiba o que está pagando por isso.

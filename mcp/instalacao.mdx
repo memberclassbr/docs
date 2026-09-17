@@ -1,100 +1,99 @@
 ---
 title: "Instalar e conectar"
-description: "Configurar o servidor MCP e registrá-lo no Claude Code"
+description: "Baixar o servidor, configurar e registrar no Claude Code"
 ---
 
-## 1. Obter o servidor
+## 1. Baixar
 
-<Warning>
-  O binário ainda **não é distribuído**: hoje ele é compilado a partir do
-  repositório do backend. Enquanto a publicação não sai, peça o binário ao time
-  da Yeon ou compile com Go 1.25:
+Pegue o arquivo da sua plataforma em [Releases](https://github.com/memberclassbr/yeon-backend/releases?q=mcp):
 
-  ```bash
-  make build-mcp        # gera bin/yeon-mcp
-  ```
-</Warning>
+| sistema | arquivo |
+| --- | --- |
+| macOS (Apple Silicon) | `yeon-mcp-darwin-arm64.tar.gz` |
+| macOS (Intel) | `yeon-mcp-darwin-amd64.tar.gz` |
+| Linux (x86-64) | `yeon-mcp-linux-amd64.tar.gz` |
+| Linux (ARM) | `yeon-mcp-linux-arm64.tar.gz` |
+| Windows | `yeon-mcp-windows-amd64.zip` |
 
-## 2. Gerar a chave
-
-No [Painel](https://app.yeon.com.br), nas configurações do projeto, gere um token de API com as permissões que a sua integração precisa.
-
-Escolha as permissões com cuidado: **elas são definidas na criação e não mudam depois**. Precisar de mais é gerar outra chave e trocar a configuração. Veja [Permissões da chave](/api/permissoes).
+```bash
+tar -xzf yeon-mcp-darwin-arm64.tar.gz
+sha256sum -c SHA256SUMS
+```
 
 <Note>
-  Quer um agente que só consulta? Gere uma chave só com as permissões de leitura
-  (`catalog:read`, `billing:read`, …). É mais forte do que qualquer configuração
-  do servidor, porque vale para qualquer cliente que use a chave.
+  **macOS:** na primeira execução o sistema bloqueia o arquivo baixado. Libere com:
+
+  ```bash
+  xattr -d com.apple.quarantine yeon-mcp-darwin-arm64
+  ```
 </Note>
 
-## 3. Configurar
+## 2. Gerar o token
 
-Tudo vem do ambiente do processo.
+No [Painel](https://app.yeon.com.br), em **Configurações do projeto → Chaves de API**, gere um token com as permissões que você vai usar.
 
-| variável | obrigatória | o que é |
-| --- | --- | --- |
-| `YEON_API_URL` | sim | `https://api.yeon.com.br` |
-| `YEON_API_TOKEN` | sim | o token gerado no Painel |
-| `YEON_MCP_GROUPS` | **sim** | os [grupos](/mcp/grupos) que você usa, separados por vírgula |
-| `YEON_MCP_READONLY` | não | `true` remove toda ferramenta que modifica dados |
-| `YEON_MCP_TIMEOUT_SECONDS` | não | timeout de cada chamada (padrão 30) |
+As permissões são definidas na criação e não mudam depois. Para mudar, gere outro token. Veja [Permissões da chave](/api/permissoes).
 
-`YEON_MCP_GROUPS` não tem valor padrão de propósito — [entenda por quê](/mcp/grupos).
-
-## 4. Registrar no Claude Code
+## 3. Registrar no Claude Code
 
 ```bash
 claude mcp add yeon \
   --scope local \
-  --env YEON_API_URL=https://api.yeon.com.br \
   --env YEON_API_TOKEN="$YEON_API_TOKEN" \
   --env YEON_MCP_GROUPS=catalog,sales \
-  -- /caminho/absoluto/para/yeon-mcp
+  -- /caminho/absoluto/para/yeon-mcp-darwin-arm64
 ```
+
+### Variáveis
+
+| variável | obrigatória | valor |
+| --- | --- | --- |
+| `YEON_API_TOKEN` | sim | o token gerado no Painel |
+| `YEON_MCP_GROUPS` | sim | [grupos](/mcp/grupos) separados por vírgula, ou `all` |
+| `YEON_MCP_READONLY` | não | `true` carrega só as ferramentas de consulta |
+| `YEON_MCP_TIMEOUT_SECONDS` | não | padrão `30` |
 
 <Warning>
-  Nunca escreva o token direto num arquivo versionado. Use variável de ambiente,
-  como acima. Se um token vazar, revogue-o no Painel e gere outro.
+  Passe o token por variável de ambiente, nunca escrito em arquivo versionado.
+  Se vazar, revogue no Painel e gere outro.
 </Warning>
 
-### Escopo da configuração
+### Escopo
 
-O escopo controla **onde a configuração fica disponível no seu cliente** — não qual projeto da Yeon o agente alcança. Esse continua vindo da chave, em qualquer diretório.
-
-| escopo | onde vale |
+| escopo | disponível |
 | --- | --- |
-| `local` | só para você, só neste projeto (padrão) |
-| `project` | versionado em `.mcp.json`, compartilhado com o time — **não** ponha chave aqui |
-| `user` | você, em qualquer projeto |
+| `local` | só para você, neste projeto (padrão) |
+| `project` | versionado em `.mcp.json`, para o time |
+| `user` | para você, em qualquer projeto |
 
-## 5. Validar
+O escopo é do seu cliente. O projeto da Yeon vem do token, em qualquer diretório.
+
+## 4. Conferir
 
 ```bash
-claude mcp list          # deve dizer "✔ Connected"
-claude mcp get yeon      # confere transporte, comando e ambiente
+claude mcp list     # yeon: ... - ✔ Connected
+claude mcp get yeon
 ```
 
-Dentro do Claude Code, `/mcp` lista as ferramentas — é aí que você confere que **só os grupos que você ligou apareceram**.
+No Claude Code, `/mcp` lista as ferramentas carregadas.
 
-Depois peça algo simples, como *"lista os produtos do meu projeto"*. Se voltar a lista, está de pé.
+Peça algo simples para confirmar: *"lista os produtos do meu projeto"*.
 
-## Diagnosticar
+## Trocar o token
 
-| sintoma | causa provável |
-| --- | --- |
-| `Failed to connect` | caminho do binário errado, ou configuração inválida — rode o binário no terminal e leia a saída |
-| `YEON_MCP_GROUPS é obrigatório` | falta escolher os grupos |
-| tudo responde `API_TOKEN_INVALID` | chave errada, revogada, ou apontando para outro ambiente |
-| tudo responde `API_TOKEN_SCOPE_MISSING` | a chave não tem a permissão — gere outra, não adianta repetir |
-| uma ferramenta sumiu | o grupo saiu de `YEON_MCP_GROUPS`, ou `YEON_MCP_READONLY` foi ligado |
-| `429` | teto de requisições da chave; o erro diz quantos segundos esperar |
-
-Toda chamada leva um identificador de correlação, e o erro o devolve — é ele que o suporte usa para achar a requisição.
-
-## Trocar a chave ou remover
-
-Trocar a chave é editar a configuração e reconectar; não há como trocá-la em tempo de execução.
+Edite a configuração e reconecte. Não há como trocar em execução.
 
 ```bash
 claude mcp remove yeon --scope local
 ```
+
+## Problemas comuns
+
+| mensagem | o que fazer |
+| --- | --- |
+| `Failed to connect` | confira o caminho do binário; rode-o no terminal para ver o erro |
+| `YEON_MCP_GROUPS é obrigatório` | informe os grupos |
+| `API_TOKEN_INVALID` | token errado ou revogado; gere outro |
+| `API_TOKEN_SCOPE_MISSING` | o token não tem essa permissão; gere outro com ela |
+| `429` | limite de requisições; espere os segundos indicados |
+| uma ferramenta sumiu | o grupo saiu de `YEON_MCP_GROUPS` ou `YEON_MCP_READONLY` está ligado |
