@@ -1,0 +1,64 @@
+---
+title: "Segurança"
+description: "Modo leitura, permissões e repetição de operações"
+---
+
+## Permissões
+
+O servidor não tem permissões próprias: ele repassa as chamadas à API com o seu token, e a API decide.
+
+Para restringir o que o agente faz, gere um token com menos permissões. Um token sem `billing:refund` não devolve dinheiro por caminho nenhum.
+
+Quando falta permissão, a resposta é:
+
+```
+403 API_TOKEN_SCOPE_MISSING
+```
+
+Permissões não mudam depois da criação do token. Gere outro com a permissão que falta.
+
+## Modo leitura
+
+```bash
+--env YEON_MCP_READONLY=true
+```
+
+Carrega apenas as 46 ferramentas de consulta. As 48 que modificam dados não são registradas — não aparecem na lista nem podem ser chamadas.
+
+As exportações de catálogo e de transações continuam disponíveis: elas só leem.
+
+## Projeto
+
+Nenhuma ferramenta aceita `project_id`, `account_id` ou `seller_id`. O projeto é sempre o do token.
+
+Enviar um projeto diferente onde a API aceitaria o campo retorna:
+
+```
+400 DESTINATION_PROJECT_MISMATCH
+```
+
+## Repetir uma operação
+
+23 operações — reembolso, saque, convite, adesão, aceite — aceitam `idempotency_key`. O servidor gera uma quando você não informa.
+
+Depois de um erro de rede, repita **com a mesma chave** para não duplicar o efeito. A chave vem na mensagem de erro:
+
+```
+Para repetir com segurança, chame de novo com idempotency_key="8f3a1c62-…"
+e os MESMOS argumentos: a API devolve o resultado da primeira tentativa em
+vez de executar outra.
+```
+
+O servidor não repete operações automaticamente.
+
+## Dados sensíveis
+
+- número de cartão, CVV e senha não são aceitos como argumento;
+- tokens de gateway e o seu token de API não aparecem em respostas nem em erros;
+- arquivos são enviados como URL já hospedada; o servidor não lê arquivos do seu disco.
+
+## Conteúdo de terceiros
+
+Nomes de produto, mensagens de clientes e corpos de webhook são escritos por outras pessoas e voltam como dados da API.
+
+Revise operações que movem dinheiro ou concedem acesso antes de aprovar. Para um agente que só consulta, use um token somente de leitura.

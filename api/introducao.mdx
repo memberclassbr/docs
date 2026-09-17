@@ -26,9 +26,15 @@ O token é gerado no [Painel](https://app.yeon.com.br), nas configurações do s
 
 Requisições sem token, com token inválido ou revogado recebem `401 Unauthorized`.
 
+## Permissões
+
+Além de pertencer a um único projeto, cada token carrega **permissões** escolhidas na criação: uma operação só responde se a chave puder executá-la. Sem a permissão, a resposta é `403` com `error_code` `API_TOKEN_SCOPE_MISSING`.
+
+Veja [Permissões da chave](/api/permissoes) para a lista e como elas se contêm.
+
 ## Rate limit
 
-O limite é de **1 requisição por segundo por IP**. Acima disso, a API responde `429 Too Many Requests`. Ao receber `429`, aguarde um instante e tente novamente.
+Os limites são **por chave**, com contadores separados para leitura e escrita. Ao exceder, a API responde `429 Too Many Requests` com `error_code` `API_TOKEN_RATE_LIMITED`; o cabeçalho `Retry-After` diz em quantos segundos tentar de novo.
 
 ## Envelope de resposta
 
@@ -41,14 +47,17 @@ Toda resposta segue o mesmo envelope:
 }
 ```
 
-Em caso de erro, `success` é `false` e `error` descreve o problema:
+Em caso de erro, `success` é `false`, `error` descreve o problema e `error_code` é o identificador estável em que o seu código decide:
 
 ```json
 {
   "success": false,
-  "error": "invalid token"
+  "error": "O campo reason precisa ser um destes: requested_by_seller, duplicate, fraud, other.",
+  "error_code": "INVALID_REFUND_REASON"
 }
 ```
+
+Veja [Erros](/api/erros) para a lista dos códigos e, principalmente, para saber quando repetir e quando corrigir.
 
 ## Paginação
 
@@ -77,7 +86,43 @@ A resposta inclui um objeto `pagination`:
 
 Enquanto `has_more` for `true`, use `next_offset` como `offset` da próxima requisição. Quando não há mais páginas, `next_offset` é `null`.
 
+## Dinheiro, sempre em centavos
+
+Todo valor monetário é um inteiro em **centavos** — `9900` é R$ 99,00. Não há ponto flutuante em lugar nenhum da API.
+
+## Oferta, pedido, transação e cobrança
+
+Quatro palavras que não são sinônimos:
+
+<ParamField path="Oferta" type="unidade de venda">
+  É o que o comprador compra: preço, moeda, parcelamento, cadência e meios de pagamento vivem nela, não no produto. É a oferta que carrega o link de checkout (`public_id`).
+</ParamField>
+
+<ParamField path="Pedido" type="agregação do checkout">
+  Uma ida ao checkout. Pode conter mais de um produto (o principal e os order bumps) e, no pagamento dividido, mais de uma cobrança.
+</ParamField>
+
+<ParamField path="Transação" type="a venda de um produto">
+  Uma linha do pedido. Um pedido com um bump tem duas transações.
+</ParamField>
+
+<ParamField path="Cobrança" type="grão do gateway">
+  O que foi cobrado de uma vez: um QR de Pix, uma captura de cartão. É onde o dinheiro se move.
+</ParamField>
+
 ## Próximos passos
+
+<Card title="Permissões da chave" icon="key" href="/api/permissoes">
+  O que cada token pode fazer, e por que isso se decide na criação.
+</Card>
+
+<Card title="Fluxos completos" icon="route" href="/api/fluxos">
+  Quatro cenários de ponta a ponta: publicar e vender, conciliar, devolver dinheiro e recrutar afiliados.
+</Card>
+
+<Card title="Erros" icon="triangle-exclamation" href="/api/erros">
+  O contrato de erro, e a única pergunta que importa: corrigir ou repetir?
+</Card>
 
 <Card title="Lista produtos" icon="box" href="/api/listar-produtos">
   Consulte os produtos do seu projeto, com ofertas e link de checkout via `include=offers`.

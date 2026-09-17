@@ -20,7 +20,179 @@
         "group": "API",
         "pages": [
           "api/introducao",
-          "api/listar-produtos"
+          "api/permissoes",
+          "api/idempotencia",
+          "api/erros",
+          "api/fluxos"
+        ]
+      },
+      {
+        "group": "MCP",
+        "pages": [
+          "mcp/introducao",
+          "mcp/instalacao",
+          "mcp/grupos",
+          "mcp/seguranca"
+        ]
+      },
+      {
+        "group": "Catálogo",
+        "pages": [
+          "api/listar-produtos",
+          "api/catalogo/listar-produtos",
+          "api/catalogo/detalhar-produto",
+          "api/catalogo/listar-ofertas",
+          "api/catalogo/listar-order-bumps",
+          "api/catalogo/listar-funil",
+          "api/catalogo/consultar-tema",
+          "api/catalogo/resultado-teste-ab",
+          "api/catalogo/exportar-produtos",
+          "api/catalogo/criar-produto",
+          "api/catalogo/atualizar-produto",
+          "api/catalogo/excluir-produto",
+          "api/catalogo/criar-oferta",
+          "api/catalogo/atualizar-oferta",
+          "api/catalogo/excluir-oferta",
+          "api/catalogo/substituir-bumps",
+          "api/catalogo/substituir-funil",
+          "api/catalogo/definir-tema",
+          "api/catalogo/remover-tema"
+        ]
+      },
+      {
+        "group": "Cupons",
+        "pages": [
+          "api/cupons/listar-cupons",
+          "api/cupons/detalhar-cupom",
+          "api/cupons/listar-alvos",
+          "api/cupons/criar-cupom",
+          "api/cupons/atualizar-cupom",
+          "api/cupons/excluir-cupom"
+        ]
+      },
+      {
+        "group": "Transações",
+        "pages": [
+          "api/transacoes/listar",
+          "api/transacoes/detalhar",
+          "api/transacoes/eventos",
+          "api/transacoes/exportar",
+          "api/transacoes/reembolsos",
+          "api/transacoes/reenviar-evento"
+        ]
+      },
+      {
+        "group": "Reembolsos",
+        "pages": [
+          "api/reembolsos/reembolsar-venda",
+          "api/reembolsos/reembolsar-cobranca",
+          "api/transacoes/reembolsos"
+        ]
+      },
+      {
+        "group": "Indicadores",
+        "pages": [
+          "api/indicadores/resumo",
+          "api/indicadores/grafico"
+        ]
+      },
+      {
+        "group": "Clientes",
+        "pages": [
+          "api/clientes/listar",
+          "api/clientes/detalhar",
+          "api/clientes/pedidos",
+          "api/clientes/carrinhos",
+          "api/clientes/eventos",
+          "api/clientes/reenviar-evento"
+        ]
+      },
+      {
+        "group": "Assinaturas",
+        "pages": [
+          "api/assinaturas/listar",
+          "api/assinaturas/detalhar",
+          "api/assinaturas/cancelar",
+          "api/assinaturas/reautorizar",
+          "api/assinaturas/cobrar-agora",
+          "api/assinaturas/reemitir-fatura",
+          "api/assinaturas/reembolsar-e-cancelar"
+        ]
+      },
+      {
+        "group": "Disputas",
+        "pages": [
+          "api/disputas/listar",
+          "api/disputas/detalhar",
+          "api/disputas/enviar-evidencias",
+          "api/disputas/aceitar"
+        ]
+      },
+      {
+        "group": "Financeiro",
+        "pages": [
+          "api/financeiro/liberacoes",
+          "api/financeiro/disponiveis-para-saque",
+          "api/financeiro/solicitar-saque"
+        ]
+      },
+      {
+        "group": "Configuração de webhooks",
+        "pages": [
+          "api/webhooks-config/listar",
+          "api/webhooks-config/criar",
+          "api/webhooks-config/atualizar",
+          "api/webhooks-config/excluir",
+          "api/webhooks-config/testar",
+          "api/webhooks-config/entregas",
+          "api/webhooks-config/reenviar"
+        ]
+      },
+      {
+        "group": "Membros",
+        "pages": [
+          "api/membros/listar",
+          "api/membros/convidar",
+          "api/membros/permissoes",
+          "api/membros/remover-acesso",
+          "api/membros/cancelar-convite"
+        ]
+      },
+      {
+        "group": "Afiliados",
+        "pages": [
+          "api/afiliados/programa",
+          "api/afiliados/configurar-programa",
+          "api/afiliados/listar-afiliados",
+          "api/afiliados/aprovar",
+          "api/afiliados/bloquear",
+          "api/afiliados/percentual",
+          "api/afiliados/ofertas-do-afiliado",
+          "api/afiliados/definir-ofertas",
+          "api/afiliados/minhas-afiliacoes",
+          "api/afiliados/produtos-afiliados",
+          "api/afiliados/detalhar-produto-afiliado",
+          "api/afiliados/consultar-programa",
+          "api/afiliados/aderir",
+          "api/afiliados/sair"
+        ]
+      },
+      {
+        "group": "Co-produção",
+        "pages": [
+          "api/coproducao/listar-coprodutores",
+          "api/coproducao/convidar",
+          "api/coproducao/percentual",
+          "api/coproducao/encerrar",
+          "api/coproducao/cancelar-convite",
+          "api/coproducao/minhas-coproducoes",
+          "api/coproducao/rendimentos",
+          "api/coproducao/produtos",
+          "api/coproducao/detalhar-produto",
+          "api/coproducao/convites-recebidos",
+          "api/coproducao/aceitar",
+          "api/coproducao/recusar",
+          "api/coproducao/sair"
         ]
       },
       {
