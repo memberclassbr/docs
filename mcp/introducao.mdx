@@ -1,0 +1,59 @@
+---
+title: "MCP da Yeon"
+description: "Deixe um agente de IA operar o seu projeto pela API pública"
+---
+
+O servidor MCP da Yeon dá a um agente — o Claude Code, por exemplo — as ferramentas para consultar e gerenciar **um projeto seu**: catálogo, vendas, assinaturas, webhooks, afiliados, co-produção, membros e financeiro.
+
+Você conversa; ele chama a API.
+
+> *"Cria um produto chamado Curso de Fotografia com um plano único de R$ 149,90 e me dá o link de checkout."*
+
+## Como ele se encaixa
+
+```text
+  você  →  agente  →  servidor MCP  →  API pública da Yeon
+```
+
+O servidor é um **tradutor**, não um atalho. Tudo o que ele faz é HTTP contra a [API pública](/api/introducao), com a mesma chave que você usaria num `curl`:
+
+- as **permissões** continuam sendo as da chave;
+- o **projeto** continua sendo o da chave;
+- as **regras de negócio** continuam sendo as da API.
+
+Uma ferramenta do MCP não consegue fazer nada que a sua chave não pudesse fazer sozinha. Se você quer limitar o que o agente alcança, limite a chave — não há um segundo lugar onde permissão se configure.
+
+## Uma conexão, um projeto
+
+A chave é escolhida na configuração do servidor e não muda em tempo de execução. **Não existe ferramenta para trocar de projeto**, e nenhuma delas aceita `project_id` como argumento.
+
+Para operar dois projetos, registre duas conexões, cada uma com a sua chave.
+
+## O que ele não faz
+
+Não é lacuna: é escopo.
+
+| não faz | onde se faz |
+| --- | --- |
+| criar, listar ou trocar de projeto | Painel |
+| gerar ou revogar chaves de API | Painel |
+| perfil, dados bancários, KYC | Painel |
+| Bling, Nuvemshop, pixels, área de membros | Painel |
+| aceitar convite em nome de outra pessoa | quem foi convidado, pelo link |
+| saldo e extrato da conta | Painel — eles são da conta, não do projeto |
+
+E ele **nunca** pede número de cartão, CVV ou senha, nem devolve token de gateway.
+
+## Próximos passos
+
+<Card title="Instalar e conectar" icon="plug" href="/mcp/instalacao">
+  Configuração, registro no Claude Code e como validar que ficou de pé.
+</Card>
+
+<Card title="Grupos de ferramentas" icon="layer-group" href="/mcp/grupos">
+  As 94 ferramentas, e por que você escolhe só as que usa.
+</Card>
+
+<Card title="Segurança" icon="shield-check" href="/mcp/seguranca">
+  Modo leitura, permissões da chave e repetição segura de operações.
+</Card>

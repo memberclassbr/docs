@@ -1,0 +1,217 @@
+---
+title: "Grupos de ferramentas"
+description: "As 94 ferramentas, e por que você liga só as que usa"
+---
+
+O servidor tem **94 ferramentas** — uma por operação da API pública. Você não carrega todas: escolhe grupos.
+
+```bash
+--env YEON_MCP_GROUPS=catalog,sales
+```
+
+## Por que escolher é obrigatório
+
+`YEON_MCP_GROUPS` não tem valor padrão. Sem ele, o servidor recusa subir e lista os grupos disponíveis.
+
+A razão é o **contexto do agente**. Cada ferramenta ocupa espaço na janela dele com o nome, a descrição e o schema dos argumentos — as 94 juntas custam cerca de **16 mil tokens**, gastos em toda conversa, antes de ele fazer qualquer coisa.
+
+E não é só custo: com 94 ferramentas parecidas, escolher a certa fica mais difícil. `yeon_catalog_products_get`, `yeon_affiliate_my_products_get` e `yeon_coproduction_my_products_get` são três coisas diferentes com nomes vizinhos.
+
+Quem só consulta vendas liga `sales` e paga 13 definições, não 94.
+
+<Note>
+  Um valor padrão que ligasse tudo seria escolhido por omissão justamente por
+  quem não perceberia a conta. Por isso a escolha é explícita.
+</Note>
+
+## Os grupos
+
+### `catalog` — 19 ferramentas (9 de leitura, 10 de escrita)
+
+produtos, ofertas, tema, order bumps e funil pós-compra
+
+| ferramenta | |
+| --- | --- |
+| `yeon_catalog_bumps_list` | leitura |
+| `yeon_catalog_experiment_get` | leitura |
+| `yeon_catalog_funnel_list` | leitura |
+| `yeon_catalog_offers_list` | leitura |
+| `yeon_catalog_products_export` | leitura |
+| `yeon_catalog_products_get` | leitura |
+| `yeon_catalog_products_list` | leitura |
+| `yeon_catalog_theme_get` | leitura |
+| `yeon_storefront_products_list` | leitura |
+| `yeon_catalog_bumps_replace` | **escrita** |
+| `yeon_catalog_funnel_replace` | **escrita** |
+| `yeon_catalog_offers_create` | **escrita** |
+| `yeon_catalog_offers_delete` | **escrita** |
+| `yeon_catalog_offers_update` | **escrita** |
+| `yeon_catalog_products_create` | **escrita** |
+| `yeon_catalog_products_delete` | **escrita** |
+| `yeon_catalog_products_update` | **escrita** |
+| `yeon_catalog_theme_delete` | **escrita** |
+| `yeon_catalog_theme_put` | **escrita** |
+
+### `affiliates` — 14 ferramentas (7 de leitura, 7 de escrita)
+
+programa do produto, moderação e o lado de quem promove
+
+| ferramenta | |
+| --- | --- |
+| `yeon_affiliate_affiliations_list` | leitura |
+| `yeon_affiliate_my_affiliations_list` | leitura |
+| `yeon_affiliate_my_products_get` | leitura |
+| `yeon_affiliate_my_products_list` | leitura |
+| `yeon_affiliate_offer_access_get` | leitura |
+| `yeon_affiliate_program_get` | leitura |
+| `yeon_affiliate_program_preview` | leitura |
+| `yeon_affiliate_approve` | **escrita** |
+| `yeon_affiliate_block` | **escrita** |
+| `yeon_affiliate_join` | **escrita** |
+| `yeon_affiliate_leave` | **escrita** |
+| `yeon_affiliate_program_upsert` | **escrita** |
+| `yeon_affiliate_set_offer_access` | **escrita** |
+| `yeon_affiliate_set_percent` | **escrita** |
+
+### `coproduction` — 13 ferramentas (6 de leitura, 7 de escrita)
+
+acordos, convites, rendimentos e produtos co-produzidos
+
+| ferramenta | |
+| --- | --- |
+| `yeon_coproduction_earnings_list` | leitura |
+| `yeon_coproduction_invites_list` | leitura |
+| `yeon_coproduction_my_list` | leitura |
+| `yeon_coproduction_my_products_get` | leitura |
+| `yeon_coproduction_my_products_list` | leitura |
+| `yeon_coproduction_product_list` | leitura |
+| `yeon_coproduction_accept_invite` | **escrita** |
+| `yeon_coproduction_cancel_invite` | **escrita** |
+| `yeon_coproduction_end` | **escrita** |
+| `yeon_coproduction_invite` | **escrita** |
+| `yeon_coproduction_leave` | **escrita** |
+| `yeon_coproduction_propose_percent` | **escrita** |
+| `yeon_coproduction_refuse_invite` | **escrita** |
+
+### `sales` — 13 ferramentas (11 de leitura, 2 de escrita)
+
+transações, pedidos, clientes, carrinhos e indicadores
+
+| ferramenta | |
+| --- | --- |
+| `yeon_billing_chart_get` | leitura |
+| `yeon_billing_summary_get` | leitura |
+| `yeon_customers_abandoned_carts_list` | leitura |
+| `yeon_customers_events_list` | leitura |
+| `yeon_customers_get` | leitura |
+| `yeon_customers_list` | leitura |
+| `yeon_customers_orders_list` | leitura |
+| `yeon_transactions_events_list` | leitura |
+| `yeon_transactions_export` | leitura |
+| `yeon_transactions_get` | leitura |
+| `yeon_transactions_list` | leitura |
+| `yeon_customers_resend_event` | **escrita** |
+| `yeon_transactions_resend_event` | **escrita** |
+
+### `subscriptions` — 7 ferramentas (2 de leitura, 5 de escrita)
+
+assinaturas: consulta, cancelamento, cobrança e fatura Pix
+
+| ferramenta | |
+| --- | --- |
+| `yeon_subscriptions_get` | leitura |
+| `yeon_subscriptions_list` | leitura |
+| `yeon_subscriptions_cancel` | **escrita** |
+| `yeon_subscriptions_charge_now` | **escrita** |
+| `yeon_subscriptions_reauthorize` | **escrita** |
+| `yeon_subscriptions_refund_and_cancel` | **escrita** |
+| `yeon_subscriptions_reissue_invoice` | **escrita** |
+
+### `webhooks` — 7 ferramentas (2 de leitura, 5 de escrita)
+
+configuração, teste, entregas e reenvio
+
+| ferramenta | |
+| --- | --- |
+| `yeon_webhooks_list` | leitura |
+| `yeon_webhooks_logs_list` | leitura |
+| `yeon_webhooks_create` | **escrita** |
+| `yeon_webhooks_delete` | **escrita** |
+| `yeon_webhooks_resend_delivery` | **escrita** |
+| `yeon_webhooks_test` | **escrita** |
+| `yeon_webhooks_update` | **escrita** |
+
+### `coupons` — 6 ferramentas (3 de leitura, 3 de escrita)
+
+cupons e os alvos selecionáveis
+
+| ferramenta | |
+| --- | --- |
+| `yeon_coupons_get` | leitura |
+| `yeon_coupons_list` | leitura |
+| `yeon_coupons_options_list` | leitura |
+| `yeon_coupons_create` | **escrita** |
+| `yeon_coupons_delete` | **escrita** |
+| `yeon_coupons_update` | **escrita** |
+
+### `members` — 5 ferramentas (1 de leitura, 4 de escrita)
+
+equipe do projeto: listar, convidar, permissões e remoção
+
+| ferramenta | |
+| --- | --- |
+| `yeon_members_list` | leitura |
+| `yeon_members_cancel_invite` | **escrita** |
+| `yeon_members_invite` | **escrita** |
+| `yeon_members_revoke_access` | **escrita** |
+| `yeon_members_set_permissions` | **escrita** |
+
+### `disputes` — 4 ferramentas (2 de leitura, 2 de escrita)
+
+chargebacks: consulta, evidências e aceite
+
+| ferramenta | |
+| --- | --- |
+| `yeon_disputes_get` | leitura |
+| `yeon_disputes_list` | leitura |
+| `yeon_disputes_accept` | **escrita** |
+| `yeon_disputes_submit_evidence` | **escrita** |
+
+### `financial` — 3 ferramentas (2 de leitura, 1 de escrita)
+
+liberações previstas, cobranças disponíveis e pedido de saque
+
+| ferramenta | |
+| --- | --- |
+| `yeon_financial_available_withdrawals_list` | leitura |
+| `yeon_financial_releases_list` | leitura |
+| `yeon_financial_request_withdrawal` | **escrita** |
+
+### `refunds` — 3 ferramentas (1 de leitura, 2 de escrita)
+
+devolução de dinheiro por pedido, linha ou cobrança
+
+| ferramenta | |
+| --- | --- |
+| `yeon_refunds_list` | leitura |
+| `yeon_refunds_refund_payment` | **escrita** |
+| `yeon_refunds_refund_transaction` | **escrita** |
+
+## Os dois lados de afiliados e co-produção
+
+Esses dois módulos têm lados opostos, e a mesma conexão pode estar em qualquer um deles:
+
+- **produtor** — o programa do *meu* produto, quem pediu afiliação, aprovar, percentual;
+- **parceiro** — o que *eu* promovo ou co-produzo, aderir, sair, aceitar convite.
+
+As ferramentas do lado do parceiro têm `my` no nome (`yeon_affiliate_my_products_list`), e a descrição de cada uma diz de qual lado ela é.
+
+## Ligar tudo mesmo assim
+
+É possível, e às vezes é o que você quer — uma sessão de exploração, por exemplo:
+
+```bash
+--env YEON_MCP_GROUPS=affiliates,catalog,coproduction,coupons,disputes,financial,members,refunds,sales,subscriptions,webhooks
+```
+
+Só saiba o que está pagando por isso.

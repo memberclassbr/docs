@@ -36,14 +36,27 @@ Permissões: `catalog:write`.
     `9900` é R$ 99,00 — [sempre centavos](/api/introducao#dinheiro-sempre-em-centavos).
   </Step>
 
-  <Step title="Use o link que a oferta já traz">
-    A resposta da oferta traz `checkout_url` pronto, junto do `public_id`:
+  <Step title="Pegue o link de checkout">
+    A oferta que você acabou de criar traz o `public_id` (`of_` + 10 caracteres). O **link pronto** vem na vitrine:
+
+    ```bash
+    curl "https://api.yeon.com.br/api/public/v1/products?include=offers" \
+      -H "Authorization: Bearer <token>"
+    ```
+
+    Cada oferta ali traz `checkout_url`:
 
     ```text
     https://pay.yeon.com.br/of_a1b2c3d4e5
     ```
 
-    Não existe criação de link: a oferta **é** o link. Use o `checkout_url` como ele vem, em vez de montá-lo a partir do `public_id` — o domínio é nosso e pode mudar.
+    Use o `checkout_url` como ele vem, em vez de montá-lo a partir do `public_id` — o domínio é nosso e pode mudar.
+
+    <Note>
+      As rotas de **gestão** (`listProductOffers`, `createOffer`) devolvem `public_id` e os contadores internos, mas não o `checkout_url`. A vitrine é a visão do comprador, e é lá que o link mora.
+    </Note>
+
+    Não existe criação de link: a oferta **é** o link.
   </Step>
 </Steps>
 
