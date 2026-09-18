@@ -17,10 +17,12 @@ Quando falta permissão, a resposta é:
 
 Permissões não mudam depois da criação do token. Gere outro com a permissão que falta.
 
+O token é conferido a cada chamada. Revogar no Painel corta o acesso na chamada seguinte, sem precisar desconectar o agente.
+
 ## Modo leitura
 
-```bash
---env YEON_MCP_READONLY=true
+```text
+https://api.yeon.com.br/mcp?groups=all&readonly=true
 ```
 
 Carrega apenas as 46 ferramentas de consulta. As 48 que modificam dados não são registradas — não aparecem na lista nem podem ser chamadas.

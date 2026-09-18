@@ -30,7 +30,7 @@
         "group": "MCP",
         "pages": [
           "mcp/introducao",
-          "mcp/instalacao",
+          "mcp/conectar",
           "mcp/grupos",
           "mcp/seguranca"
         ]

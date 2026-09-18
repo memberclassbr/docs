@@ -3,10 +3,10 @@ title: "Grupos de ferramentas"
 description: "As 94 ferramentas do servidor e como escolher as que você usa"
 ---
 
-`YEON_MCP_GROUPS` define quais ferramentas o servidor carrega. É obrigatório.
+O parâmetro `groups`, na URL de conexão, define quais ferramentas o servidor carrega. É obrigatório.
 
-```bash
---env YEON_MCP_GROUPS=catalog,sales
+```text
+https://api.yeon.com.br/mcp?groups=catalog,sales
 ```
 
 Carregue só os grupos que a sua integração usa: cada ferramenta ocupa espaço no contexto do agente, e as 94 juntas consomem cerca de 16 mil tokens por conversa.
@@ -27,8 +27,8 @@ Carregue só os grupos que a sua integração usa: cada ferramenta ocupa espaço
 
 Para carregar todos:
 
-```bash
---env YEON_MCP_GROUPS=all
+```text
+https://api.yeon.com.br/mcp?groups=all
 ```
 
 ## Afiliados e co-produção

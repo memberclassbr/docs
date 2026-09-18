@@ -9,11 +9,13 @@ São **94 ferramentas**, uma para cada operação da [API pública](/api/introdu
 
 ## Como funciona
 
-O servidor roda na sua máquina e traduz os pedidos do agente em chamadas à API da Yeon, usando um token que você gera no Painel.
+O servidor é um endereço da API da Yeon. Você registra esse endereço no seu cliente com um token gerado no Painel, e o agente passa a ter as ferramentas.
 
 ```text
-você  →  agente  →  servidor MCP  →  API da Yeon
+você  →  agente  →  https://api.yeon.com.br/mcp
 ```
+
+Não há nada para baixar, instalar ou atualizar.
 
 As permissões são as do token. O projeto é o do token. Para limitar o que o agente faz, gere um token com menos permissões.
 
@@ -50,8 +52,8 @@ Um servidor opera em **um projeto**. Para dois projetos, registre duas conexões
 
 ## Comece por aqui
 
-<Card title="Instalar e conectar" icon="plug" href="/mcp/instalacao">
-  Baixar, configurar e registrar no Claude Code.
+<Card title="Conectar" icon="plug" href="/mcp/conectar">
+  Gerar o token e registrar no Claude Code.
 </Card>
 
 <Card title="Grupos de ferramentas" icon="layer-group" href="/mcp/grupos">
