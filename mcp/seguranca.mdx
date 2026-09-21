@@ -5,9 +5,11 @@ description: "Modo leitura, permissões e repetição de operações"
 
 ## Permissões
 
-O servidor não tem permissões próprias: ele repassa as chamadas à API com o seu token, e a API decide.
+O servidor não tem permissões próprias: ele repassa as chamadas à API com a sua credencial, e a API decide.
 
-Para restringir o que o agente faz, gere um token com menos permissões. Um token sem `billing:refund` não devolve dinheiro por caminho nenhum.
+As permissões são as que você aprovou na tela de autorização — ou, se você conectou com uma chave de API, as dela. Sem `billing:refund`, por exemplo, nenhum caminho devolve dinheiro.
+
+**Reembolso, saque, gestão de equipe e aceite de disputa não entram por padrão.** Um aplicativo que precise deles tem de pedi-los explicitamente, e você vê o pedido na tela antes de autorizar.
 
 Quando falta permissão, a resposta é:
 
@@ -15,14 +17,14 @@ Quando falta permissão, a resposta é:
 403 API_TOKEN_SCOPE_MISSING
 ```
 
-Permissões não mudam depois da criação do token. Gere outro com a permissão que falta.
+Permissões não mudam depois de autorizadas. Para mudar, desconecte em **Aplicativos** e autorize de novo.
 
-O token é conferido a cada chamada. Revogar no Painel corta o acesso na chamada seguinte, sem precisar desconectar o agente.
+A credencial é conferida a cada chamada. Desconectar no Painel corta o acesso na chamada seguinte, sem precisar mexer no agente.
 
 ## Modo leitura
 
 ```text
-https://api.yeon.com.br/mcp?groups=all&readonly=true
+https://api.yeon.com.br/mcp?readonly=true
 ```
 
 Carrega apenas as 46 ferramentas de consulta. As 48 que modificam dados não são registradas — não aparecem na lista nem podem ser chamadas.
@@ -31,7 +33,7 @@ As exportações de catálogo e de transações continuam disponíveis: elas só
 
 ## Projeto
 
-Nenhuma ferramenta aceita `project_id`, `account_id` ou `seller_id`. O projeto é sempre o do token.
+Nenhuma ferramenta aceita `project_id`, `account_id` ou `seller_id`. O projeto é sempre o que você escolheu ao autorizar.
 
 Enviar um projeto diferente onde a API aceitaria o campo retorna:
 
@@ -56,11 +58,11 @@ O servidor não repete operações automaticamente.
 ## Dados sensíveis
 
 - número de cartão, CVV e senha não são aceitos como argumento;
-- tokens de gateway e o seu token de API não aparecem em respostas nem em erros;
+- tokens de gateway e a sua credencial não aparecem em respostas nem em erros;
 - arquivos são enviados como URL já hospedada; o servidor não lê arquivos do seu disco.
 
 ## Conteúdo de terceiros
 
 Nomes de produto, mensagens de clientes e corpos de webhook são escritos por outras pessoas e voltam como dados da API.
 
-Revise operações que movem dinheiro ou concedem acesso antes de aprovar. Para um agente que só consulta, use um token somente de leitura.
+Revise operações que movem dinheiro ou concedem acesso antes de aprovar. Para um agente que só consulta, conecte com `readonly=true`.

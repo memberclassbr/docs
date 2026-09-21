@@ -1,15 +1,17 @@
 ---
 title: "Grupos de ferramentas"
-description: "As 94 ferramentas do servidor e como escolher as que você usa"
+description: "As 94 ferramentas do servidor e como carregar menos"
 ---
 
-O parâmetro `groups`, na URL de conexão, define quais ferramentas o servidor carrega. É obrigatório.
+As ferramentas são agrupadas por assunto. Por padrão, o servidor carrega os grupos que as suas permissões alcançam: quem autorizou só catálogo não recebe as ferramentas de saque.
+
+Para carregar **menos** do que as suas permissões alcançam, use `groups` na URL de conexão:
 
 ```text
 https://api.yeon.com.br/mcp?groups=catalog,sales
 ```
 
-Carregue só os grupos que a sua integração usa: cada ferramenta ocupa espaço no contexto do agente, e as 94 juntas consomem cerca de 16 mil tokens por conversa.
+Vale a pena quando a sua integração usa pouca coisa: cada ferramenta ocupa espaço no contexto do agente, e as 94 juntas consomem cerca de 16 mil tokens por conversa.
 
 | grupo | ferramentas | conteúdo |
 | --- | ---: | --- |
@@ -25,7 +27,7 @@ Carregue só os grupos que a sua integração usa: cada ferramenta ocupa espaço
 | `financial` | 3 | liberações, disponíveis para saque, pedido de saque |
 | `refunds` | 3 | devoluções |
 
-Para carregar todos:
+Para carregar todos os que as suas permissões alcançam:
 
 ```text
 https://api.yeon.com.br/mcp?groups=all

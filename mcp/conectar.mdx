@@ -1,86 +1,83 @@
 ---
 title: "Conectar"
-description: "Registrar o servidor MCP da Yeon no seu cliente"
+description: "Ligar o Claude ao seu projeto da Yeon"
 ---
 
-Não há nada para baixar ou instalar. O servidor é um endereço da API da Yeon; você conecta seu cliente a ele com um token.
+Não há nada para baixar nem chave para colar. Você conecta pelo próprio aplicativo e autoriza o acesso numa página da Yeon.
 
-## 1. Gerar o token
+## No Claude (app, site e Cowork)
 
-No [Painel](https://app.yeon.com.br), em **Configurações do projeto → Chaves de API**, gere um token com as permissões que você vai usar.
-
-As permissões são definidas na criação e não mudam depois. Para mudar, gere outro token. Veja [Permissões da chave](/api/permissoes).
-
-## 2. Registrar no Claude Code
-
-```bash
-claude mcp add --transport http yeon \
-  --scope local \
-  "https://api.yeon.com.br/mcp?groups=catalog,sales" \
-  --header "Authorization: Bearer $YEON_API_TOKEN"
-```
-
-<Warning>
-  Passe o token por variável de ambiente, nunca escrito em arquivo versionado.
-  Se vazar, revogue no Painel e gere outro.
-</Warning>
-
-### Endereço
+1. Abra **Conectores** e escolha adicionar um conector personalizado.
+2. Cole o endereço:
 
 ```text
 https://api.yeon.com.br/mcp
 ```
 
-A configuração vai na própria URL:
+3. Deixe os campos avançados em branco e confirme.
+4. O Claude leva você a uma página da Yeon. Entre com a sua conta.
+5. Confira o projeto e as permissões, e clique em **Autorizar**.
 
-| parâmetro | obrigatório | valor |
-| --- | --- | --- |
-| `groups` | sim | [grupos](/mcp/grupos) separados por vírgula, ou `all` |
-| `readonly` | não | `true` carrega só as ferramentas de consulta |
+Pronto. As ferramentas aparecem na conversa.
 
-### Escopo
+## No Claude Code
 
-| escopo | disponível |
+```bash
+claude mcp add --transport http yeon https://api.yeon.com.br/mcp
+```
+
+O navegador abre na mesma página de autorização.
+
+Para usar uma [chave de API](/api/introducao) em vez de autorizar pelo navegador:
+
+```bash
+claude mcp add --transport http yeon \
+  "https://api.yeon.com.br/mcp" \
+  --header "Authorization: Bearer $YEON_API_TOKEN"
+```
+
+<Warning>
+  Passe a chave por variável de ambiente, nunca escrita em arquivo versionado.
+  Se vazar, revogue no Painel e gere outra.
+</Warning>
+
+## A tela de autorização
+
+Ela mostra:
+
+| | |
 | --- | --- |
-| `local` | só para você, neste projeto (padrão) |
-| `project` | versionado em `.mcp.json`, para o time |
-| `user` | para você, em qualquer projeto |
+| **Projeto** | a que projeto o acesso vale. Com mais de um, você escolhe |
+| **Permissões** | o que o aplicativo vai poder fazer, em português |
 
-O escopo é do seu cliente. O projeto da Yeon vem do token, em qualquer diretório.
+O acesso vale para **um projeto**. Para dois, autorize duas vezes.
 
-## 3. Conferir
+Permissões que movem dinheiro ou dão acesso a outras pessoas — reembolso, saque, gestão de equipe e aceite de disputa — **não entram por padrão**.
+
+## Conferir
 
 ```bash
 claude mcp list     # yeon: ... - ✔ Connected
-claude mcp get yeon
 ```
 
-No Claude Code, `/mcp` lista as ferramentas carregadas.
+No Claude Code, `/mcp` lista as ferramentas carregadas. Peça algo simples para confirmar: *"lista os produtos do meu projeto"*.
 
-Peça algo simples para confirmar: *"lista os produtos do meu projeto"*.
+## Desconectar
 
-## Outros clientes
+No [Painel](https://app.yeon.com.br), em **Aplicativos**, clique em **Desconectar**. O acesso acaba na hora.
 
-O servidor usa o transporte **Streamable HTTP** com o token no cabeçalho `Authorization`. Qualquer cliente MCP que aceite cabeçalhos personalizados conecta do mesmo jeito.
-
-Claude Desktop e claude.ai ainda não são compatíveis: os conectores deles usam OAuth, que o servidor não oferece.
-
-## Trocar o token ou os grupos
-
-Remova e registre de novo com os novos valores.
+Para remover também do cliente:
 
 ```bash
-claude mcp remove yeon --scope local
+claude mcp remove yeon
 ```
 
 ## Problemas comuns
 
 | mensagem | o que fazer |
 | --- | --- |
-| `Failed to connect` | confira a URL e se `groups` está na query |
-| `MCP_CONFIG_INVALID` | informe os grupos, ou corrija o nome de um deles — a resposta lista os válidos |
-| `API_TOKEN_MISSING` | falta o cabeçalho `Authorization` |
-| `API_TOKEN_INVALID` | token errado ou revogado; gere outro |
-| `API_TOKEN_SCOPE_MISSING` | o token não tem essa permissão; gere outro com ela |
+| `Aplicativo não reconhecido` | deixe os campos avançados de OAuth em branco e conecte de novo |
+| `Escolha o projeto` | entre no Painel, selecione um projeto e tente de novo |
+| `API_TOKEN_SCOPE_MISSING` | a permissão não foi autorizada; desconecte em **Aplicativos** e autorize de novo |
 | `429` | limite de requisições; espere os segundos indicados |
-| uma ferramenta sumiu | o grupo saiu de `groups`, ou `readonly=true` está ligado |
+| uma ferramenta não aparece | a permissão correspondente não foi autorizada |
