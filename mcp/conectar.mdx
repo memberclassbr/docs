@@ -1,0 +1,86 @@
+---
+title: "Conectar"
+description: "Registrar o servidor MCP da Yeon no seu cliente"
+---
+
+Não há nada para baixar ou instalar. O servidor é um endereço da API da Yeon; você conecta seu cliente a ele com um token.
+
+## 1. Gerar o token
+
+No [Painel](https://app.yeon.com.br), em **Configurações do projeto → Chaves de API**, gere um token com as permissões que você vai usar.
+
+As permissões são definidas na criação e não mudam depois. Para mudar, gere outro token. Veja [Permissões da chave](/api/permissoes).
+
+## 2. Registrar no Claude Code
+
+```bash
+claude mcp add --transport http yeon \
+  --scope local \
+  "https://api.yeon.com.br/mcp?groups=catalog,sales" \
+  --header "Authorization: Bearer $YEON_API_TOKEN"
+```
+
+<Warning>
+  Passe o token por variável de ambiente, nunca escrito em arquivo versionado.
+  Se vazar, revogue no Painel e gere outro.
+</Warning>
+
+### Endereço
+
+```text
+https://api.yeon.com.br/mcp
+```
+
+A configuração vai na própria URL:
+
+| parâmetro | obrigatório | valor |
+| --- | --- | --- |
+| `groups` | sim | [grupos](/mcp/grupos) separados por vírgula, ou `all` |
+| `readonly` | não | `true` carrega só as ferramentas de consulta |
+
+### Escopo
+
+| escopo | disponível |
+| --- | --- |
+| `local` | só para você, neste projeto (padrão) |
+| `project` | versionado em `.mcp.json`, para o time |
+| `user` | para você, em qualquer projeto |
+
+O escopo é do seu cliente. O projeto da Yeon vem do token, em qualquer diretório.
+
+## 3. Conferir
+
+```bash
+claude mcp list     # yeon: ... - ✔ Connected
+claude mcp get yeon
+```
+
+No Claude Code, `/mcp` lista as ferramentas carregadas.
+
+Peça algo simples para confirmar: *"lista os produtos do meu projeto"*.
+
+## Outros clientes
+
+O servidor usa o transporte **Streamable HTTP** com o token no cabeçalho `Authorization`. Qualquer cliente MCP que aceite cabeçalhos personalizados conecta do mesmo jeito.
+
+Claude Desktop e claude.ai ainda não são compatíveis: os conectores deles usam OAuth, que o servidor não oferece.
+
+## Trocar o token ou os grupos
+
+Remova e registre de novo com os novos valores.
+
+```bash
+claude mcp remove yeon --scope local
+```
+
+## Problemas comuns
+
+| mensagem | o que fazer |
+| --- | --- |
+| `Failed to connect` | confira a URL e se `groups` está na query |
+| `MCP_CONFIG_INVALID` | informe os grupos, ou corrija o nome de um deles — a resposta lista os válidos |
+| `API_TOKEN_MISSING` | falta o cabeçalho `Authorization` |
+| `API_TOKEN_INVALID` | token errado ou revogado; gere outro |
+| `API_TOKEN_SCOPE_MISSING` | o token não tem essa permissão; gere outro com ela |
+| `429` | limite de requisições; espere os segundos indicados |
+| uma ferramenta sumiu | o grupo saiu de `groups`, ou `readonly=true` está ligado |

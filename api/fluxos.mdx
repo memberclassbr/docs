@@ -1,0 +1,197 @@
+---
+title: "Fluxos completos"
+description: "Quatro cenários de ponta a ponta, com as chamadas na ordem"
+---
+
+Cada fluxo abaixo lista as chamadas na ordem e as permissões que a chave precisa carregar. Gere a chave com todas elas de uma vez: permissões são escolhidas na criação e não mudam depois.
+
+## 1. Publicar um produto e começar a vender
+
+Permissões: `catalog:write`.
+
+<Steps>
+  <Step title="Crie o produto">
+    ```bash
+    curl -X POST https://api.yeon.com.br/api/public/v1/catalog/products \
+      -H "Authorization: Bearer <token>" \
+      -H "Idempotency-Key: $(uuidgen)" \
+      -H "Content-Type: application/json" \
+      -d '{"name":"Curso de Fotografia","status":"active"}'
+    ```
+
+    O produto é só a base: ele não tem preço. Não envie `project_id` — o projeto vem da chave, e um valor divergente é `400`.
+  </Step>
+
+  <Step title="Crie a oferta">
+    A oferta é a unidade de venda: preço, moeda, parcelamento e meios de pagamento vivem nela.
+
+    ```bash
+    curl -X POST https://api.yeon.com.br/api/public/v1/catalog/products/{id}/offers \
+      -H "Authorization: Bearer <token>" \
+      -H "Idempotency-Key: $(uuidgen)" \
+      -H "Content-Type: application/json" \
+      -d '{"name":"Plano único","type":"one_time","price_cents":9900,"currency":"BRL","status":"active"}'
+    ```
+
+    `9900` é R$ 99,00 — [sempre centavos](/api/introducao#dinheiro-sempre-em-centavos).
+  </Step>
+
+  <Step title="Pegue o link de checkout">
+    A oferta que você acabou de criar traz o `public_id` (`of_` + 10 caracteres). O **link pronto** vem na vitrine:
+
+    ```bash
+    curl "https://api.yeon.com.br/api/public/v1/products?include=offers" \
+      -H "Authorization: Bearer <token>"
+    ```
+
+    Cada oferta ali traz `checkout_url`:
+
+    ```text
+    https://pay.yeon.com.br/of_a1b2c3d4e5
+    ```
+
+    Use o `checkout_url` como ele vem, em vez de montá-lo a partir do `public_id` — o domínio é nosso e pode mudar.
+
+    <Note>
+      As rotas de **gestão** (`listProductOffers`, `createOffer`) devolvem `public_id` e os contadores internos, mas não o `checkout_url`. A vitrine é a visão do comprador, e é lá que o link mora.
+    </Note>
+
+    Não existe criação de link: a oferta **é** o link.
+  </Step>
+</Steps>
+
+<Tip>
+  Produto sem nenhuma oferta ativa não aparece na vitrine. Se a listagem pública vier vazia, é quase sempre isto.
+</Tip>
+
+## 2. Conciliar vendas todo dia
+
+Permissões: `billing:read`.
+
+<Steps>
+  <Step title="Liste as transações da janela">
+    ```bash
+    curl "https://api.yeon.com.br/api/public/v1/billing/transactions?limit=100&offset=0" \
+      -H "Authorization: Bearer <token>"
+    ```
+
+    Uma linha por **produto vendido**, não por pedido: um pedido com order bump aparece como duas transações — `ON…` na principal e `ON…-2` na seguinte.
+  </Step>
+
+  <Step title="Pagine até o fim">
+    Enquanto `pagination.has_more` for `true`, use `pagination.next_offset` como próximo `offset`. Não invente o passo: `next_offset` já vem pronto.
+  </Step>
+
+  <Step title="Detalhe o que precisar">
+    ```bash
+    curl https://api.yeon.com.br/api/public/v1/billing/transactions/{orderID} \
+      -H "Authorization: Bearer <token>"
+    ```
+
+    O detalhe traz as cobranças do pedido, as taxas e o líquido. Taxa e líquido **por linha** são rateio de exibição; o que se move no financeiro é por cobrança.
+  </Step>
+</Steps>
+
+<Warning>
+  Conciliar por polling funciona, mas chega atrasado. Para reagir a uma venda no instante em que ela acontece, cadastre um [webhook](/api/webhooks-config/criar) e use a listagem só como rede de segurança.
+</Warning>
+
+## 3. Devolver o dinheiro de uma venda
+
+Permissões: `billing:refund` (que **não** vem junto de `billing:write`).
+
+<Steps>
+  <Step title="Peça a devolução do pedido">
+    ```bash
+    curl -X POST https://api.yeon.com.br/api/public/v1/billing/transactions/{orderID}/refund \
+      -H "Authorization: Bearer <token>" \
+      -H "Idempotency-Key: $(uuidgen)" \
+      -H "Content-Type: application/json" \
+      -d '{"reason":"requested_by_seller"}'
+    ```
+
+    Omitir `amount_cents` devolve tudo o que resta. `reason` aceita apenas `requested_by_seller`, `duplicate`, `fraud` ou `other` — qualquer outro valor é `400 INVALID_REFUND_REASON`.
+  </Step>
+
+  <Step title="Leia o status do CONJUNTO, não só o HTTP">
+    Um pedido pago em duas cobranças pode voltar pela metade. Nesse caso a resposta é `207`, com `success: true` e `status: "partially_refunded"`.
+
+    ```json
+    {
+      "success": true,
+      "data": {
+        "status": "partially_refunded",
+        "legs": [
+          { "payment_id": "…", "status": "refunded" },
+          { "payment_id": "…", "status": "failed", "error": "…" }
+        ]
+      }
+    }
+    ```
+
+    Trate `207` como o que ele é: **o comprador ainda está sem parte do dinheiro**. Percorra `legs[]` e trate a que falhou.
+  </Step>
+
+  <Step title="Se precisar repetir, repita igual">
+    A mesma `Idempotency-Key` e o mesmo corpo não devolvem dinheiro duas vezes: você recebe a resposta guardada, com o header `Idempotent-Replay: true`. Chave nova numa devolução já feita também converge — a API responde `already_refunded` em vez de estornar de novo.
+  </Step>
+</Steps>
+
+## 4. Recrutar e gerenciar um afiliado
+
+Permissões: `affiliate:write`.
+
+<Steps>
+  <Step title="Abra o programa do produto">
+    ```bash
+    curl -X PUT https://api.yeon.com.br/api/public/v1/products/{id}/affiliate-program \
+      -H "Authorization: Bearer <token>" \
+      -H "Content-Type: application/json" \
+      -d '{"mode":"approval","default_percent":30,"attribution":"last"}'
+    ```
+
+    `mode: approval` faz cada pedido esperar por você; `open` aprova sozinho. `default_percent` é a comissão sobre o líquido, de 1 a 95.
+  </Step>
+
+  <Step title="Divulgue o código público">
+    A resposta traz `public_id` (`ap_` + 10 caracteres). É o que o afiliado usa para pedir afiliação.
+  </Step>
+
+  <Step title="Modere os pedidos">
+    ```bash
+    curl https://api.yeon.com.br/api/public/v1/products/{id}/affiliations \
+      -H "Authorization: Bearer <token>"
+
+    curl -X POST https://api.yeon.com.br/api/public/v1/affiliations/{id}/approve \
+      -H "Authorization: Bearer <token>"
+    ```
+
+    A elegibilidade é relida na aprovação: se a pessoa virou co-produtora do mesmo produto enquanto o pedido esperava, a resposta é `400 AFFILIATE_COPRODUCER`.
+  </Step>
+
+  <Step title="Ajuste o que cada um ganha">
+    ```bash
+    curl -X PUT https://api.yeon.com.br/api/public/v1/affiliations/{id}/percent \
+      -H "Authorization: Bearer <token>" \
+      -H "Content-Type: application/json" \
+      -d '{"percent":40}'
+    ```
+
+    Vale para vendas **futuras**: a fatia é carimbada quando o dinheiro se move, e mudar o acordo não mexe no que já entrou.
+  </Step>
+</Steps>
+
+<Note>
+  Do outro lado, a chave de quem PROMOVE usa `listAffiliatedProducts` e `joinAffiliateProgram`. A comissão cai no projeto da chave — não há escolha de projeto de destino pela API.
+</Note>
+
+## O que a API não faz
+
+Estas coisas existem no Painel e **não** têm endpoint público nesta entrega. Não é lacuna de documentação: é escopo.
+
+- criar, listar ou trocar de projeto — o projeto vem da chave;
+- gerar ou revogar chaves de API;
+- perfil, dados bancários e KYC da conta;
+- Bling, Nuvemshop, pixels e área de membros;
+- saldo e extrato do Financeiro (as liberações previstas e as transações disponíveis para saque estão expostas; o saldo, não — ele é da conta, não do projeto);
+- aceitar um convite em nome de outra pessoa.

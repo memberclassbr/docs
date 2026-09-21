@@ -1,0 +1,64 @@
+---
+title: "Idempotência"
+description: "Como repetir uma escrita com segurança depois de um timeout"
+---
+
+Quando uma requisição de escrita não responde, você não sabe se ela chegou. Repetir pode cobrar duas vezes, criar dois produtos, emitir dois cupons.
+
+A API resolve isso com a **Idempotency-Key**: um identificador da tentativa, escolhido por você.
+
+```bash
+curl -X POST https://api.yeon.com.br/api/public/v1/catalog/products \
+  -H "Authorization: Bearer <token>" \
+  -H "Idempotency-Key: 8f3a1c62-5d0e-4b77-9a41-2c6f0b9e7d15" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Curso de Fotografia","status":"active"}'
+```
+
+Repita a chamada com a **mesma chave e o mesmo corpo** e a API não executa nada: devolve a resposta da primeira vez.
+
+<ResponseField name="Idempotent-Replay" type="header">
+  Vem como `true` quando a resposta é uma repetição. Na primeira chamada o cabeçalho não aparece.
+</ResponseField>
+
+## Quais operações exigem a chave
+
+As que **criam** algo, e as que movem dinheiro. São as que, repetidas por engano, deixam um rastro que alguém precisa desfazer.
+
+Operações que convergem — atualizar, excluir, substituir um conjunto inteiro — não pedem chave: repeti-las leva ao mesmo estado. Se a operação exige a chave e você não a enviar, a resposta é `400` com `error_code` `IDEMPOTENCY_KEY_REQUIRED`.
+
+## Escolhendo a chave
+
+Um UUID v4 por tentativa serve. O que importa:
+
+- **Uma chave por intenção.** Se você quer criar dois produtos, use duas chaves.
+- **Reutilize ao tentar de novo.** É justamente a repetição da chave que impede a duplicação.
+- **Não derive do conteúdo.** Duas criações legítimas do mesmo produto teriam a mesma chave e a segunda viraria uma repetição.
+
+A chave vale **24 horas** e pertence ao seu projeto: dois integradores que escolham o mesmo texto não colidem.
+
+## As três respostas que você precisa tratar
+
+<ResponseField name="409 IDEMPOTENCY_KEY_REUSED">
+  A mesma chave foi usada para uma requisição **diferente** — outro corpo, ou outro recurso. A API recusa em vez de devolver a resposta da outra operação, que seria entregar o resultado de algo que você não pediu. Use uma chave nova.
+</ResponseField>
+
+<ResponseField name="409 IDEMPOTENCY_IN_PROGRESS">
+  A primeira chamada com essa chave **ainda está rodando**. O cabeçalho `Retry-After` diz em quantos segundos insistir. Não troque a chave: trocar é pedir a operação de novo.
+</ResponseField>
+
+<ResponseField name="5xx">
+  A chave é **liberada**. Pode repetir a mesma requisição com a mesma chave — ela vai executar de verdade, porque a primeira não chegou a concluir.
+</ResponseField>
+
+Erros de cliente (`4xx`) são guardados como qualquer resposta: repetir a mesma requisição inválida devolve o mesmo erro, sem reexecutar.
+
+<Note>
+  A resposta repetida é a mesma **semanticamente**. A ordem das chaves do JSON pode diferir da primeira, porque a resposta guardada é normalizada no armazenamento. Compare campos, não o texto bruto.
+</Note>
+
+## O projeto não vai no corpo
+
+Sua chave já pertence a um projeto, e é nele que a escrita acontece. Não envie `project_id` no corpo: enviar um projeto diferente do da chave é recusado com `400`.
+
+Isso é deliberado — ignorar o campo em silêncio criaria o recurso num lugar diferente do que você pediu.
