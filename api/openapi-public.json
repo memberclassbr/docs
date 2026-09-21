@@ -1668,6 +1668,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Conflict — é a última oferta do produto (`PRODUCT_REQUIRES_ONE_OFFER`). Um produto sem oferta não é vendável; crie outra antes de apagar esta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3160,28 +3170,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "status": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "204": {
+            "description": "No Content — o tema próprio do produto foi removido; ele volta a herdar o do projeto."
           },
           "400": {
             "description": "Bad Request — corpo inválido ou regra de validação do domínio.",
@@ -4786,7 +4776,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "OK",
             "content": {
               "application/json": {
@@ -5808,6 +5798,16 @@
                 }
               }
             }
+          },
+          "502": {
+            "description": "Bad Gateway — o destino do webhook respondeu erro ou não respondeu. O teste chegou a ser enviado; o problema está do outro lado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6602,7 +6602,7 @@
       "post": {
         "operationId": "approveAffiliation",
         "summary": "Aprova um pedido de afiliação",
-        "description": "Ativa a afiliação e libera o código de divulgação. A elegibilidade é **relida na aprovação**: um pedido pode esperar dias, e nesse meio-tempo a pessoa pode ter virado co-produtora do mesmo produto — o que é recusado com `AFFILIATE_COPRODUCER`.",
+        "description": "**Só afiliação em `requested` pode ser aprovada.** Bloquear uma afiliação ativa é definitivo pela chave do produtor: não há caminho de desbloqueio na API aberta, e aprovar uma bloqueada responde 409. Para voltar, a pessoa afiliada pede adesão de novo.\n\nAtiva a afiliação e libera o código de divulgação. A elegibilidade é **relida na aprovação**: um pedido pode esperar dias, e nesse meio-tempo a pessoa pode ter virado co-produtora do mesmo produto — o que é recusado com `AFFILIATE_COPRODUCER`.",
         "parameters": [
           {
             "name": "id",
@@ -6684,6 +6684,16 @@
           },
           "429": {
             "description": "Too Many Requests — teto por minuto (API_TOKEN_RATE_LIMITED). Veja Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — a afiliação não está em `requested` (`AFFILIATION_NOT_ACTIVE`). Bloqueada não volta a ativa por aqui.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12470,8 +12480,58 @@
       },
       "ProductTheme": {
         "type": "object",
-        "description": "Tema do checkout do produto, em JSONB livre. Faz merge raso sobre o tema do projeto (ADR 0009). 404 quando o produto não tem tema próprio e herda o do projeto.",
-        "additionalProperties": true
+        "description": "Tema do checkout do produto. Faz merge raso sobre o tema do projeto (ADR 0009): campo ausente herda a camada de baixo. 404 quando o produto não tem tema próprio. Campo fora desta lista é RECUSADO com 400 — o tema não é JSON livre.",
+        "additionalProperties": false,
+        "properties": {
+          "logo_url": {
+            "type": "string",
+            "description": "URL do logo exibido no checkout."
+          },
+          "banner_url": {
+            "type": "string",
+            "description": "URL do banner exibido no topo."
+          },
+          "header_text": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Texto do cabeçalho."
+          },
+          "primary_color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Cor principal, em hexadecimal (#RRGGBB)."
+          },
+          "background_color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Cor de fundo, em hexadecimal."
+          },
+          "button_color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Cor do botão, em hexadecimal."
+          },
+          "button_text_color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Cor do texto do botão, em hexadecimal."
+          },
+          "layout": {
+            "type": "string",
+            "description": "Variante de layout do checkout."
+          },
+          "require_address": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Exige endereço no checkout. Produto com nota fiscal ou item físico exige de qualquer forma."
+          },
+          "experiment": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true,
+            "description": "Configuração do teste A/B. `null` remove o teste; ausente mantém o que existe."
+          }
+        }
       },
       "ProductUpdate": {
         "type": "object",
