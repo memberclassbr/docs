@@ -28,7 +28,7 @@ Os webhooks são **enviados ao vendedor** (seller). O roteamento é feito pelo e
 
 ## Cadastrar um webhook
 
-O cadastro de webhooks é feito pelo [Painel](https://app.yeon.com.br). Acesse as configurações do seu projeto, abra a seção de webhooks e cadastre um novo endpoint.
+Cadastre o webhook pelo [Painel](https://app.yeon.com.br), nas configurações do seu projeto, ou pela API com [Cria um webhook](/api/webhooks-config/criar).
 
 Um webhook tem os seguintes campos:
 
@@ -37,11 +37,11 @@ Um webhook tem os seguintes campos:
 </ParamField>
 
 <ParamField path="secret" type="string">
-  Segredo usado para assinar o payload. Quando definido, cada entrega inclui o cabeçalho `X-Yeon-Signature`. Consulte [Segurança e entrega](/webhooks/seguranca).
+  Segredo usado para assinar o payload. Se você não enviar um, a Yeon gera. Ele volta **somente na resposta da criação**: guarde-o, porque a listagem não o expõe. Ao editar o webhook, omitir o `secret` preserva o atual. Consulte [Segurança e entrega](/webhooks/seguranca).
 </ParamField>
 
 <ParamField path="events" type="string[]">
-  Lista dos tipos de evento assinados, por exemplo `["payment.approved", "payment.refunded"]`. Veja [Eventos](/webhooks/eventos).
+  Lista dos tipos de evento assinados, por exemplo `["payment.approved", "payment.refunded"]`. Nomes que não estão em [Eventos](/webhooks/eventos), como `order.paid`, são recusados com `400 WEBHOOK_INVALID_EVENT`.
 </ParamField>
 
 <ParamField path="status" type="string">

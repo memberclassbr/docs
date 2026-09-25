@@ -17,7 +17,7 @@ billing:refund
 ```
 
 <ParamField path="módulo" type="string">
-  A área do sistema: `catalog`, `billing`, `customer`, `subscription`, `dispute`, `ledger`, `webhook`, `affiliate`, `coproduction`, `members`.
+  A área do sistema: `catalog`, `billing`, `customer`, `subscription`, `ledger`, `webhook`, `affiliate`, `coproduction`, `members`.
 </ParamField>
 
 <ParamField path="ação" type="string">
@@ -56,29 +56,25 @@ Afiliação e co-produção pagam em **um** projeto. Pela API, esse projeto é s
 
 Aderir a um programa de afiliados e aceitar um convite de co-produção aceitam um `project_id` opcional, e ele precisa ser o projeto da chave. Qualquer outro é `400` com `error_code` `DESTINATION_PROJECT_MISMATCH`, em vez de ser ignorado em silêncio.
 
+O caminho normal é omitir o `project_id`. O corpo inteiro também pode ser omitido.
+
 <Note>
   Um `project_id` que a API aceitasse e descartasse seria dinheiro indo para onde você não pediu — e você só descobriria no extrato.
 </Note>
 
 Pelo mesmo motivo, trocar o projeto de destino de uma co-produção já ativa não existe na API, e os endpoints que listam seus projetos para escolha também não. Isso se faz no Painel.
 
-## Vitrine e gestão são permissões diferentes
+## Listar produtos exige `catalog:read`
 
-<ParamField path="catalog:storefront" type="permissão">
-  Lê a **vitrine**: `GET /api/public/v1/products`, que traz só produtos ativos com oferta ativa, como o comprador vê.
-</ParamField>
+A listagem de produtos é `GET /api/public/v1/catalog/products`, e ela exige `catalog:read` (ou `catalog:write`, que o contém). Com `include=offers`, cada produto traz as ofertas ativas com o `checkout_url` pronto.
 
-<ParamField path="catalog:read" type="permissão">
-  Lê a **gestão**: `GET /api/public/v1/catalog/products` e as demais consultas do catálogo, que enxergam rascunho, inativo e o detalhe de cada oferta.
-</ParamField>
-
-`catalog:read` contém a vitrine. O contrário não é verdade: uma chave de vitrine não enxerga produto inativo.
+A antiga rota de vitrine, `GET /api/public/v1/products`, não existe mais. A permissão `catalog:storefront` não abre nenhuma operação da API.
 
 ## Chaves criadas antes das permissões
 
-Se você gerou um token antes de as permissões existirem, ele continua funcionando e mantém **exatamente** o acesso que tinha: a listagem de produtos da vitrine. Ele não ganhou nada.
+Um token gerado antes de as permissões existirem só alcançava a vitrine. Como essa rota saiu, ele não abre mais nenhuma operação.
 
-Para dar mais acesso a essa integração, gere um novo token com as permissões que ela precisa e revogue o antigo.
+Gere um novo token com `catalog:read` (e o que mais a integração precisar), troque na integração e revogue o antigo.
 
 ## Trocar as permissões de uma chave
 

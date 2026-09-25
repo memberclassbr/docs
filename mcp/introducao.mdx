@@ -5,19 +5,19 @@ description: "Conecte um agente de IA ao seu projeto da Yeon"
 
 O servidor MCP da Yeon permite que um agente de IA — como o Claude Code — consulte e gerencie um projeto seu: catálogo, vendas, assinaturas, webhooks, afiliados, co-produção, membros e financeiro.
 
-São **94 ferramentas**, uma para cada operação da [API pública](/api/introducao).
+São **83 ferramentas**, uma para cada operação da [API pública](/api/introducao).
 
 ## Como funciona
 
-O servidor é um endereço da API da Yeon. Você registra esse endereço no seu cliente com um token gerado no Painel, e o agente passa a ter as ferramentas.
+O servidor é um endereço da API da Yeon. Você o registra no seu cliente, entra com a sua conta e autoriza o acesso — como ao entrar num site com outra conta.
 
 ```text
 você  →  agente  →  https://api.yeon.com.br/mcp
 ```
 
-Não há nada para baixar, instalar ou atualizar.
+Não há nada para baixar, instalar ou atualizar, e nenhuma chave para colar.
 
-As permissões são as do token. O projeto é o do token. Para limitar o que o agente faz, gere um token com menos permissões.
+O acesso vale para **um projeto**, com as permissões que você aprovou. Você desfaz quando quiser, em **Aplicativos**, no Painel.
 
 ## O que dá para fazer
 
@@ -25,10 +25,9 @@ As permissões são as do token. O projeto é o do token. Para limitar o que o a
 | --- | --- |
 | Catálogo | criar produto, criar oferta, editar tema, configurar order bumps |
 | Vendas | listar transações, detalhar uma venda, consultar clientes, ver indicadores |
-| Assinaturas | consultar, cancelar, cobrar agora, reemitir fatura Pix |
-| Reembolsos | devolver uma venda, uma linha ou uma cobrança |
+| Assinaturas | consultar, cancelar, reembolsar e cancelar |
+| Reembolsos | devolver uma venda inteira ou uma linha |
 | Financeiro | liberações previstas e solicitação de saque |
-| Disputas | consultar, enviar evidências, aceitar |
 | Webhooks | cadastrar, testar, ver entregas, reenviar |
 | Membros | listar, convidar, alterar permissões, remover acesso |
 | Afiliados | programa do produto, aprovar, percentuais, aderir |
@@ -53,11 +52,11 @@ Um servidor opera em **um projeto**. Para dois projetos, registre duas conexões
 ## Comece por aqui
 
 <Card title="Conectar" icon="plug" href="/mcp/conectar">
-  Gerar o token e registrar no Claude Code.
+  Registrar o endereço e autorizar o acesso.
 </Card>
 
 <Card title="Grupos de ferramentas" icon="layer-group" href="/mcp/grupos">
-  As 94 ferramentas e como escolher as que você usa.
+  As 83 ferramentas e como escolher as que você usa.
 </Card>
 
 <Card title="Segurança" icon="shield-check" href="/mcp/seguranca">

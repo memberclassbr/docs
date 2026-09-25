@@ -37,10 +37,10 @@ Permissões: `catalog:write`.
   </Step>
 
   <Step title="Pegue o link de checkout">
-    A oferta que você acabou de criar traz o `public_id` (`of_` + 10 caracteres). O **link pronto** vem na vitrine:
+    A oferta que você acabou de criar traz o `public_id` (`of_` + 10 caracteres). O **link pronto** vem na listagem de produtos com `include=offers`:
 
     ```bash
-    curl "https://api.yeon.com.br/api/public/v1/products?include=offers" \
+    curl "https://api.yeon.com.br/api/public/v1/catalog/products?status=active&include=offers" \
       -H "Authorization: Bearer <token>"
     ```
 
@@ -53,7 +53,7 @@ Permissões: `catalog:write`.
     Use o `checkout_url` como ele vem, em vez de montá-lo a partir do `public_id` — o domínio é nosso e pode mudar.
 
     <Note>
-      As rotas de **gestão** (`listProductOffers`, `createOffer`) devolvem `public_id` e os contadores internos, mas não o `checkout_url`. A vitrine é a visão do comprador, e é lá que o link mora.
+      As rotas de **gestão** das ofertas (`listProductOffers`, `createOffer`) devolvem `public_id` e os contadores internos, mas não o `checkout_url`. O link mora na listagem de produtos com `include=offers`, que embute só as ofertas ativas.
     </Note>
 
     Não existe criação de link: a oferta **é** o link.
@@ -61,7 +61,7 @@ Permissões: `catalog:write`.
 </Steps>
 
 <Tip>
-  Produto sem nenhuma oferta ativa não aparece na vitrine. Se a listagem pública vier vazia, é quase sempre isto.
+  `include=offers` traz só ofertas **ativas**. Se um produto vier com `offers` vazio, é quase sempre porque a oferta ainda não está ativa.
 </Tip>
 
 ## 2. Conciliar vendas todo dia
@@ -110,7 +110,9 @@ Permissões: `billing:refund` (que **não** vem junto de `billing:write`).
       -d '{"reason":"requested_by_seller"}'
     ```
 
-    Omitir `amount_cents` devolve tudo o que resta. `reason` aceita apenas `requested_by_seller`, `duplicate`, `fraud` ou `other` — qualquer outro valor é `400 INVALID_REFUND_REASON`.
+    `{orderID}` escolhe o que volta. `ON…` devolve a compra inteira; `ON…-2` devolve só o produto daquela linha. Não use o UUID da cobrança nem o ID do gateway.
+
+    Omitir `amount_cents` devolve tudo o que resta. Com um código de linha, o teto é o saldo **daquela transação**, e passar dele é `400 INVALID_REFUND_AMOUNT`. `reason` aceita apenas `requested_by_seller`, `duplicate`, `fraud` ou `other` — qualquer outro valor é `400 INVALID_REFUND_REASON`.
   </Step>
 
   <Step title="Leia o status do CONJUNTO, não só o HTTP">

@@ -60,7 +60,7 @@ O status responde antes do código.
 | `IDEMPOTENCY_KEY_INVALID` | 400 | A chave passa de 255 caracteres |
 | `IDEMPOTENCY_KEY_REUSED` | 409 | A mesma chave já foi usada para **outra** requisição |
 | `IDEMPOTENCY_IN_PROGRESS` | 409 | A primeira tentativa ainda está rodando |
-| `IDEMPOTENCY_RETRY` | 409 | A reserva expirou entre o registro e a leitura — reenvie a mesma requisição |
+| `IDEMPOTENCY_RETRY` | 409 | Corrida rara em que a reserva sumiu entre o registro e a leitura. Nada foi executado: reenvie a mesma requisição |
 
 `IDEMPOTENCY_IN_PROGRESS` é o único 409 desta lista que pede espera: aguarde e **consulte o resultado** antes de tentar de novo. Detalhes em [Idempotência](/api/idempotencia).
 
@@ -69,10 +69,12 @@ O status responde antes do código.
 | `error_code` | Status | O que aconteceu |
 | --- | --- | --- |
 | `INVALID_REFUND_REASON` | 400 | `reason` fora dos quatro valores aceitos |
-| `INVALID_REFUND_AMOUNT` | 400 | `amount_cents` negativo |
+| `INVALID_REFUND_AMOUNT` | 400 | `amount_cents` negativo, ou acima do saldo devolvível da transação pedida |
+| `TRANSACTION_ID_REQUIRED` | 400 | Reembolsar e cancelar uma assinatura exige o `transaction_id` da venda |
+| `REFUND_SUBSCRIPTION_MISMATCH` | 422 | O `transaction_id` informado não pertence à assinatura |
 | `REFUND_AMOUNT_EXCEEDS_RESIDUAL` | 422 | O valor passa do que ainda resta para devolver |
 | `PAYMENT_NOT_REFUNDABLE` | 409 | A cobrança não está num estado que aceite devolução |
-| `REFUND_GATEWAY_FAILED` | 502 | O gateway recusou. **Não repita cegamente** — consulte os reembolsos da cobrança antes |
+| `REFUND_GATEWAY_FAILED` | 502 | O gateway recusou. A chave de idempotência é liberada, mas **não repita cegamente** — consulte os reembolsos da cobrança antes |
 | `ORDER_REFUND_FAILED` | 422 | Nenhuma cobrança do pedido voltou |
 | `WITHDRAWAL_PAYMENT_NOT_AVAILABLE` | 422 | Uma das transações escolhidas não está disponível para saque |
 | `KYC_REQUIRED` | 409 | O projeto precisa de KYC aprovado para sacar |
@@ -113,6 +115,15 @@ Nenhum deles se resolve por API: são ações do Painel.
 | `COPROD_INVITE_INVALID` | 404 | Convite inexistente, expirado, já respondido, ou de outro e-mail |
 | `MEMBER_IS_OWNER` | 409 | O e-mail é o dono da conta, que já tem acesso total |
 | `WEBHOOK_URL_ALREADY_EXISTS` | 409 | Já existe um webhook com essa URL neste projeto |
+| `WEBHOOK_INVALID_EVENT` | 400 | Um nome em `events` não é um [evento emitido](/webhooks/eventos) — por exemplo, `order.paid` |
+
+## Catálogo
+
+| `error_code` | Status | O que aconteceu |
+| --- | --- | --- |
+| `INVALID_PRODUCT_STATUS` | 400 | O filtro `status` aceita apenas `draft`, `active` ou `inactive` |
+
+Outros conflitos do catálogo respondem `409` sem exigir retry: cupom com código que já existe no projeto, produto com dependências comerciais que impedem a exclusão, e etapa de funil que aponta para o próprio produto da oferta principal. Uma etapa de funil com valor abaixo do mínimo é `422`.
 
 ## Uma regra para o seu retry
 
