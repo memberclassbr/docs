@@ -15,7 +15,9 @@ curl -X POST https://api.yeon.com.br/api/public/v1/catalog/products \
   -d '{"name":"Curso de Fotografia","status":"active"}'
 ```
 
-Repita a chamada com a **mesma chave e o mesmo corpo** e a API não executa nada: devolve a resposta da primeira vez.
+Repita a chamada com a **mesma chave, o mesmo corpo e a mesma query** e a API não executa nada: devolve a resposta da primeira vez.
+
+A query conta porque algumas escritas têm o efeito inteiro nela. `POST /subscriptions/{id}/cancel?cancel_at_period_end=true` e o mesmo caminho sem a query são requisições diferentes.
 
 <ResponseField name="Idempotent-Replay" type="header">
   Vem como `true` quando a resposta é uma repetição. Na primeira chamada o cabeçalho não aparece.
@@ -35,9 +37,11 @@ Um UUID v4 por tentativa serve. O que importa:
 - **Reutilize ao tentar de novo.** É justamente a repetição da chave que impede a duplicação.
 - **Não derive do conteúdo.** Duas criações legítimas do mesmo produto teriam a mesma chave e a segunda viraria uma repetição.
 
-A chave vale **24 horas** e pertence ao seu projeto: dois integradores que escolham o mesmo texto não colidem.
+A chave vale **24 horas** e pertence à **chave de API** que a enviou, não ao projeto. Duas chaves de API do mesmo projeto não compartilham reserva: a mesma `Idempotency-Key` enviada por credenciais diferentes são duas tentativas independentes.
 
-## As três respostas que você precisa tratar
+Se duas partes da sua integração podem repetir a mesma operação, faça as duas usarem a mesma chave de API.
+
+## As respostas que você precisa tratar
 
 <ResponseField name="409 IDEMPOTENCY_KEY_REUSED">
   A mesma chave foi usada para uma requisição **diferente** — outro corpo, ou outro recurso. A API recusa em vez de devolver a resposta da outra operação, que seria entregar o resultado de algo que você não pediu. Use uma chave nova.
@@ -45,6 +49,10 @@ A chave vale **24 horas** e pertence ao seu projeto: dois integradores que escol
 
 <ResponseField name="409 IDEMPOTENCY_IN_PROGRESS">
   A primeira chamada com essa chave **ainda está rodando**. O cabeçalho `Retry-After` diz em quantos segundos insistir. Não troque a chave: trocar é pedir a operação de novo.
+</ResponseField>
+
+<ResponseField name="409 IDEMPOTENCY_RETRY">
+  Uma corrida rara em que a reserva sumiu entre o registro e a leitura. **Nada foi executado.** Repita a mesma requisição, com a mesma chave.
 </ResponseField>
 
 <ResponseField name="5xx">

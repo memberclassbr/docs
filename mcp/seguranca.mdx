@@ -9,7 +9,7 @@ O servidor não tem permissões próprias: ele repassa as chamadas à API com a 
 
 As permissões são as que você aprovou na tela de autorização — ou, se você conectou com uma chave de API, as dela. Sem `billing:refund`, por exemplo, nenhum caminho devolve dinheiro.
 
-**Reembolso, saque, gestão de equipe e aceite de disputa não entram por padrão.** Um aplicativo que precise deles tem de pedi-los explicitamente, e você vê o pedido na tela antes de autorizar.
+**Reembolso, saque e gestão de equipe não entram por padrão.** Um aplicativo que precise deles tem de pedi-los explicitamente, e você vê o pedido na tela antes de autorizar.
 
 Quando falta permissão, a resposta é:
 
@@ -27,9 +27,7 @@ A credencial é conferida a cada chamada. Desconectar no Painel corta o acesso n
 https://api.yeon.com.br/mcp?readonly=true
 ```
 
-Carrega apenas as 46 ferramentas de consulta. As 48 que modificam dados não são registradas — não aparecem na lista nem podem ser chamadas.
-
-As exportações de catálogo e de transações continuam disponíveis: elas só leem.
+Carrega apenas as 41 ferramentas de consulta. As 42 que modificam dados não são registradas — não aparecem na lista nem podem ser chamadas.
 
 ## Projeto
 
@@ -43,7 +41,7 @@ Enviar um projeto diferente onde a API aceitaria o campo retorna:
 
 ## Repetir uma operação
 
-23 operações — reembolso, saque, convite, adesão, aceite — aceitam `idempotency_key`. O servidor gera uma quando você não informa.
+17 operações — reembolso, saque, convite, adesão, aceite — aceitam `idempotency_key`. O servidor gera uma quando você não informa.
 
 Depois de um erro de rede, repita **com a mesma chave** para não duplicar o efeito. A chave vem na mensagem de erro:
 

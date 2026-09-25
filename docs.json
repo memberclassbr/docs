@@ -38,7 +38,6 @@
       {
         "group": "Catálogo",
         "pages": [
-          "api/listar-produtos",
           "api/catalogo/listar-produtos",
           "api/catalogo/detalhar-produto",
           "api/catalogo/listar-ofertas",
@@ -46,7 +45,6 @@
           "api/catalogo/listar-funil",
           "api/catalogo/consultar-tema",
           "api/catalogo/resultado-teste-ab",
-          "api/catalogo/exportar-produtos",
           "api/catalogo/criar-produto",
           "api/catalogo/atualizar-produto",
           "api/catalogo/excluir-produto",
@@ -76,7 +74,6 @@
           "api/transacoes/listar",
           "api/transacoes/detalhar",
           "api/transacoes/eventos",
-          "api/transacoes/exportar",
           "api/transacoes/reembolsos",
           "api/transacoes/reenviar-evento"
         ]
@@ -85,7 +82,6 @@
         "group": "Reembolsos",
         "pages": [
           "api/reembolsos/reembolsar-venda",
-          "api/reembolsos/reembolsar-cobranca",
           "api/transacoes/reembolsos"
         ]
       },
@@ -113,19 +109,7 @@
           "api/assinaturas/listar",
           "api/assinaturas/detalhar",
           "api/assinaturas/cancelar",
-          "api/assinaturas/reautorizar",
-          "api/assinaturas/cobrar-agora",
-          "api/assinaturas/reemitir-fatura",
           "api/assinaturas/reembolsar-e-cancelar"
-        ]
-      },
-      {
-        "group": "Disputas",
-        "pages": [
-          "api/disputas/listar",
-          "api/disputas/detalhar",
-          "api/disputas/enviar-evidencias",
-          "api/disputas/aceitar"
         ]
       },
       {
@@ -235,5 +219,39 @@
     "socials": {
       "website": "https://yeon.com.br"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/api/listar-produtos",
+      "destination": "/api/catalogo/listar-produtos"
+    },
+    {
+      "source": "/api/catalogo/exportar-produtos",
+      "destination": "/api/catalogo/listar-produtos"
+    },
+    {
+      "source": "/api/transacoes/exportar",
+      "destination": "/api/transacoes/listar"
+    },
+    {
+      "source": "/api/reembolsos/reembolsar-cobranca",
+      "destination": "/api/reembolsos/reembolsar-venda"
+    },
+    {
+      "source": "/api/assinaturas/reautorizar",
+      "destination": "/api/assinaturas/detalhar"
+    },
+    {
+      "source": "/api/assinaturas/cobrar-agora",
+      "destination": "/api/assinaturas/detalhar"
+    },
+    {
+      "source": "/api/assinaturas/reemitir-fatura",
+      "destination": "/api/assinaturas/detalhar"
+    },
+    {
+      "source": "/api/disputas/:slug*",
+      "destination": "/api/introducao"
+    }
+  ]
 }

@@ -3,7 +3,7 @@ title: "Introdução à API"
 description: "Autenticação, rate limit e convenções da API pública da Yeon"
 ---
 
-A API pública da Yeon permite que sellers consultem os dados dos seus projetos de forma programática. Todas as requisições usam HTTPS e retornam JSON.
+A API pública da Yeon permite que produtores consultem os dados dos seus projetos de forma programática. Todas as requisições usam HTTPS e retornam JSON.
 
 ```text
 https://api.yeon.com.br
@@ -14,7 +14,7 @@ https://api.yeon.com.br
 Cada requisição precisa de um token de API enviado no header `Authorization`, no formato Bearer:
 
 ```bash
-curl https://api.yeon.com.br/api/public/v1/products \
+curl https://api.yeon.com.br/api/public/v1/catalog/products \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -86,6 +86,16 @@ A resposta inclui um objeto `pagination`:
 
 Enquanto `has_more` for `true`, use `next_offset` como `offset` da próxima requisição. Quando não há mais páginas, `next_offset` é `null`.
 
+## Datas
+
+Filtros de período (`date_from`, `date_to`) aceitam um dia no formato `AAAA-MM-DD`, no fuso de `America/Sao_Paulo`. Os dois limites são **inclusivos**: `date_from=2026-09-01&date_to=2026-09-01` traz o dia 1º inteiro.
+
+Onde o filtro também aceita RFC3339, um `date_to` com horário é limite **exclusivo**.
+
+## Identificadores de projeto
+
+As respostas não trazem `project_id` nem variantes como `producer_project_id` ou `affiliate_project_id`, inclusive em objetos aninhados. O projeto é sempre o da chave, então o campo não informaria nada.
+
 ## Dinheiro, sempre em centavos
 
 Todo valor monetário é um inteiro em **centavos** — `9900` é R$ 99,00. Não há ponto flutuante em lugar nenhum da API.
@@ -124,6 +134,6 @@ Quatro palavras que não são sinônimos:
   O contrato de erro, e a única pergunta que importa: corrigir ou repetir?
 </Card>
 
-<Card title="Lista produtos" icon="box" href="/api/listar-produtos">
+<Card title="Lista produtos" icon="box" href="/api/catalogo/listar-produtos">
   Consulte os produtos do seu projeto, com ofertas e link de checkout via `include=offers`.
 </Card>
